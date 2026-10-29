@@ -8,11 +8,30 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Chart.js untuk grafik riwayat yang rapi -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+  <!-- Layar Intro / Splash Screen Pembuka -->
+  <div id="introSplash" class="intro-splash">
+    <div class="intro-content">
+      <div class="intro-logo-wrapper">
+        <div class="intro-logo-glow"></div>
+        <div class="intro-icon">🐟</div>
+      </div>
+      <h1 class="intro-title">Ambajaya Fish</h1>
+      <p class="intro-subtitle">Sistem Pakan &amp; Pemantau Air Kolam</p>
+      
+      <!-- Progress Bar Memuat Sistem -->
+      <div class="intro-progress-container">
+        <div class="intro-progress-bar" id="introProgressBar"></div>
+      </div>
+      <p class="intro-status" id="introStatusText">Memeriksa kesiapan sistem kolam...</p>
+
+      <!-- Tombol Lewati / Masuk Cepat -->
+      <button class="intro-skip-btn" id="introSkipBtn">Masuk Sekarang &rarr;</button>
+    </div>
+  </div>
 
   <!-- Header Aplikasi -->
   <header class="app-header">
@@ -161,7 +180,7 @@
 
     </section>
 
-    <!-- Baris Utama 2 Kolom: Kontrol Pakan & Grafik Pantau -->
+    <!-- Baris Utama 2 Kolom: Kontrol Pakan & Pemantauan Air -->
     <div class="content-columns">
 
       <!-- Kolom Kiri: Kontrol & Jadwal Pakan -->
@@ -290,100 +309,61 @@
 
       </div>
 
-      <!-- Kolom Kanan: Grafik Real-time & Analisis Kondisi Air & Log -->
+      <!-- Kolom Kanan: Pemantauan Air Berbasis Teks -->
       <div class="column-right">
 
-        <!-- Grafik Riwayat Sensor -->
+        <!-- Pemantauan Kualitas Air Berbasis Teks (Pengganti Grafik) -->
         <section class="card panel-card">
           <div class="card-header">
             <div>
-              <h3>Grafik Pemantauan Air</h3>
-              <p class="card-subhead">Perkembangan Suhu (°C) & Kekeruhan (NTU)</p>
+              <h3>Laporan Pemantauan Air (Teks)</h3>
+              <p class="card-subhead">Ringkasan kondisi suhu & kekeruhan dalam format teks yang mudah dipahami</p>
             </div>
-            <div class="chart-legend-badge">
-              <span class="legend-dot temp-dot"></span> Suhu
-              <span class="legend-dot turb-dot"></span> Kekeruhan
-            </div>
+            <span class="badge" id="waterStatusBadge">Kondisi Ideal</span>
           </div>
           <div class="card-body">
-            <div class="chart-wrapper">
-              <canvas id="sensorChart"></canvas>
-            </div>
-          </div>
-        </section>
-
-        <!-- Panduan & Analisis Status Air -->
-        <section class="card panel-card">
-          <div class="card-header">
-            <h3>Analisis Kualitas Air & Saran Tindakan</h3>
-          </div>
-          <div class="card-body">
-            <div class="analysis-card" id="airAnalysisBox">
-              <div class="analysis-icon" id="analysisIcon">✅</div>
-              <div class="analysis-details">
-                <h4 id="analysisTitle">Kondisi Air Kolam Sangat Baik</h4>
-                <p id="analysisDesc">Suhu 28.5°C dan tingkat kekeruhan 18 NTU berada dalam batas normal untuk budidaya ikan air tawar. Ikan dapat makan dengan lahap.</p>
+            
+            <!-- Rangkuman Status Teks Terkini -->
+            <div class="water-text-summary-box">
+              <div class="summary-status-header">
+                <span class="status-indicator-dot online" id="waterSummaryDot"></span>
+                <h4 id="waterStatusSummaryTitle">Kondisi Air Kolam Sangat Baik</h4>
+              </div>
+              <p class="summary-status-desc" id="waterStatusSummaryDesc">
+                Suhu air saat ini berada pada tingkat ideal dan air kolam terpantau jernih. Ikan nyaman, sehat, dan dapat mengonsumsi pakan dengan baik.
+              </p>
+              
+              <!-- Poin-poin Parameter Teks -->
+              <div class="water-key-points">
+                <div class="key-point-item">
+                  <span class="point-icon">🌡️</span>
+                  <div>
+                    <span class="point-label">Suhu Air Terkini</span>
+                    <span class="point-text" id="waterTempSummaryText"><strong>28.5 °C</strong> — Normal & Sesuai Standar (26 - 30 °C)</span>
+                  </div>
+                </div>
+                <div class="key-point-item">
+                  <span class="point-icon">💧</span>
+                  <div>
+                    <span class="point-label">Kekeruhan Terkini</span>
+                    <span class="point-text" id="waterTurbSummaryText"><strong>18 NTU</strong> — Air Jernih & Bersih (&lt; 25 NTU)</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="water-reference-table">
-              <h4>Batas Standar Kualitas Air:</h4>
-              <table class="table-simple">
-                <thead>
-                  <tr>
-                    <th>Parameter</th>
-                    <th>Ideal</th>
-                    <th>Waspada</th>
-                    <th>Bahaya</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><strong>Suhu Air</strong></td>
-                    <td>26 - 30 °C</td>
-                    <td>24 - 25 °C atau 31 - 32 °C</td>
-                    <td>&lt; 23 °C atau &gt; 33 °C</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Kekeruhan (NTU)</strong></td>
-                    <td>&lt; 25 NTU (Jernih)</td>
-                    <td>25 - 50 NTU (Mulai Keruh)</td>
-                    <td>&gt; 50 NTU (Air Sangat Keruh)</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Pakan Sisa</strong></td>
-                    <td>Habis dlm 10 mnt</td>
-                    <td>Ada sisa sedikit</td>
-                    <td>Banyak mengendap di dasar</td>
-                  </tr>
-                </tbody>
-              </table>
+            <!-- Daftar Riwayat Pembacaan Teks Sederhana -->
+            <div class="water-history-text-section">
+              <div class="history-text-header">
+                <h4>Riwayat Catatan Suhu & Kekeruhan (Teks):</h4>
+                <small class="history-note">Diperbarui otomatis berkala</small>
+              </div>
+              
+              <div class="water-readings-list" id="waterReadingsList">
+                <!-- Diisi secara dinamis via JavaScript -->
+              </div>
             </div>
-          </div>
-        </section>
 
-        <!-- Log Riwayat Aktivitas & Pakan -->
-        <section class="card panel-card">
-          <div class="card-header">
-            <h3>Catatan Aktivitas & Pemberian Pakan</h3>
-            <button class="btn btn-sm btn-outline" id="btnClearLog">Hapus Riwayat</button>
-          </div>
-          <div class="card-body">
-            <div class="log-table-wrapper">
-              <table class="log-table">
-                <thead>
-                  <tr>
-                    <th>Waktu</th>
-                    <th>Aktivitas</th>
-                    <th>Jumlah (Gram)</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="logTableBody">
-                  <!-- Dimasukkan secara dinamis via JavaScript -->
-                </tbody>
-              </table>
-            </div>
           </div>
         </section>
 

@@ -6,10 +6,10 @@ Aplikasi web pemantau kolam dan pengendali pakan ikan otomatis berbasis **HTML, 
 
 ## 📌 Fitur Utama
 
-1. **Pemantauan Suhu Air (°C)**:
-   - Menghitung dan menampilkan suhu air secara *real-time*.
-   - Indikator status otomatis (*Air Terlalu Dingin*, *Normal/Ideal 26–30°C*, atau *Terlalu Hangat/Bahaya*).
-   - Grafik riwayat suhu air.
+1. **Pemantauan Kualitas Air Berbasis Teks (Suhu & Kekeruhan)**:
+   - Menghitung dan menampilkan suhu air (°C) serta tingkat kekeruhan (NTU) secara *real-time*.
+   - Rangkuman status teks sederhana yang langsung mudah dibaca tanpa diagram/grafik yang rumit.
+   - Riwayat berkala pembacaan sensor dalam format daftar teks rapi (waktu, suhu, kekeruhan, status).
 
 2. **Perhitungan & Pengeluaran Pakan Ikan (Gram)**:
    - Tombol pengeluaran pakan cepat (**10g, 25g, 50g, 100g**) dan input gram bebas.
@@ -17,18 +17,11 @@ Aplikasi web pemantau kolam dan pengendali pakan ikan otomatis berbasis **HTML, 
    - Pemantau sisa gram pakan di dalam tabung/wadah penyimpanan (kapasitas 1.000 gram) beserta tombol isi ulang (*Refill*).
    - **Kalkulator Kebutuhan Pakan Ikan**: Menghitung dosis pakan harian berdasarkan jumlah ikan, berat rata-rata ikan, dan persentase pakan terhadap bobot tubuh.
 
-3. **Pemantauan Kekeruhan Air (Turbidity / NTU)**:
-   - Menghitung dan menampilkan tingkat kekeruhan air (*Jernih < 25 NTU*, *Sedang 25–50 NTU*, *Keruh > 50 NTU*).
-   - Kotak analisis kualitas air yang memberikan saran tindakan langsung (misalnya rekomendasi kuras atau bersihkan filter bila air mulai pekat).
-
-4. **Jadwal Pakan Otomatis**:
+3. **Jadwal Pakan Otomatis**:
    - Atur jam pemberian pakan otomatis beserta takaran gram untuk tiap jadwal (misal 07:30, 12:30, 17:00).
    - Saklar aktif/non-aktifkan jadwal dengan mudah.
 
-5. **Catatan Riwayat (Log)**:
-   - Mencatat waktu, sumber (manual/jadwal), jumlah gram pakan yang dikeluarkan, dan status dispenser.
-
-6. **Dukungan 2 Mode (Simulasi & Hardware Nyata)**:
+4. **Dukungan 2 Mode (Simulasi & Hardware Nyata)**:
    - **Mode Simulasi**: Anda dapat langsung mencoba seluruh fungsi di browser tanpa perlu alat terpasang.
    - **Mode Hardware**: Menghubungkan dashboard langsung ke mikrokontroler **ESP32 / ESP8266 / Arduino WiFi** melalui REST API.
 
@@ -40,7 +33,7 @@ Aplikasi web pemantau kolam dan pengendali pakan ikan otomatis berbasis **HTML, 
 website Arduino/
 ├── index.html          # Struktur halaman antarmuka web
 ├── style.css           # Desain tampilan bersih & responsif (Laptop & Handphone)
-├── script.js           # Logika perhitungan suhu, pakan gram, kekeruhan, grafik, & API
+├── script.js           # Logika perhitungan suhu, pakan gram, kekeruhan teks, & API
 ├── arduino_code.ino    # Sketsa program mikrokontroler ESP32/ESP8266 siap pakai
 └── README.md           # Panduan penggunaan
 ```
@@ -73,7 +66,7 @@ Agar web dapat dibuka dari handphone Anda:
    ```text
    http://192.168.1.15:8080
    ```
-5. Website akan menyesuaikan ukuran layar handphone secara otomatis, lengkap dengan tombol kontrol pakan dan grafik monitoring.
+5. Website akan menyesuaikan ukuran layar handphone secara otomatis, lengkap dengan tombol kontrol pakan dan pemantauan sensor berbasis teks.
 
 ---
 

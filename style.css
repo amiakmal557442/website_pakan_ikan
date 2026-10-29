@@ -65,6 +65,171 @@ body {
 }
 
 /* ========================================================
+   LAYAR INTRO / SPLASH SCREEN
+   ======================================================== */
+.intro-splash {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at 50% 40%, #ffffff 0%, #f0f9ff 55%, #e0f2fe 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  transition: opacity 0.65s cubic-bezier(0.4, 0, 0.2, 1), 
+              visibility 0.65s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.intro-splash.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1.05);
+  pointer-events: none;
+}
+
+.intro-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  padding: 2.5rem 1.5rem;
+  animation: introPopIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.intro-logo-wrapper {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.intro-logo-glow {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(2, 132, 199, 0.28) 0%, rgba(2, 132, 199, 0) 70%);
+  animation: introPulse 2.4s infinite ease-in-out;
+}
+
+.intro-icon {
+  width: 96px;
+  height: 96px;
+  font-size: 3.25rem;
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border: 2px solid rgba(2, 132, 199, 0.25);
+  border-radius: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 28px -6px rgba(2, 132, 199, 0.25);
+  animation: introFloat 3s infinite ease-in-out;
+  position: relative;
+  z-index: 1;
+}
+
+.intro-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #0369a1;
+  margin-bottom: 0.35rem;
+  letter-spacing: -0.02em;
+}
+
+.intro-subtitle {
+  font-size: 0.925rem;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  font-weight: 500;
+}
+
+.intro-progress-container {
+  width: 220px;
+  height: 6px;
+  background-color: rgba(226, 232, 240, 0.8);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.intro-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #0284c7 0%, #38bdf8 100%);
+  border-radius: 9999px;
+  transition: width 0.35s ease;
+}
+
+.intro-status {
+  font-size: 0.825rem;
+  color: var(--text-light);
+  font-weight: 500;
+  min-height: 1.25rem;
+  transition: opacity 0.2s ease;
+}
+
+.intro-skip-btn {
+  margin-top: 1.75rem;
+  background-color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(2, 132, 199, 0.2);
+  color: var(--primary-hover);
+  font-family: inherit;
+  font-size: 0.825rem;
+  font-weight: 600;
+  padding: 0.45rem 1.2rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.intro-skip-btn:hover {
+  background-color: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+@keyframes introPopIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes introFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes introPulse {
+  0%, 100% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+/* ========================================================
    HEADER & NAVBAR
    ======================================================== */
 .app-header {
@@ -704,125 +869,176 @@ input:checked + .slider:before {
 }
 
 /* ========================================================
-   GRAFIK SENSOR (CHART)
+   LAPORAN & RIWAYAT PEMANTAUAN AIR (FORMAT TEKS)
    ======================================================== */
-.chart-wrapper {
-  position: relative;
-  height: 240px;
-  width: 100%;
-}
-
-.chart-legend-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.legend-dot.temp-dot {
-  background-color: #f97316;
-}
-
-.legend-dot.turb-dot {
-  background-color: #0284c7;
-}
-
-/* ========================================================
-   ANALISIS KUALITAS AIR
-   ======================================================== */
-.analysis-card {
-  display: flex;
-  gap: 1rem;
-  padding: 1rem;
+.water-text-summary-box {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background-color: var(--success-light);
-  border: 1px solid rgba(22, 163, 74, 0.2);
+  padding: 1.15rem;
   margin-bottom: 1.25rem;
 }
 
-.analysis-icon {
-  font-size: 1.75rem;
+.summary-status-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.45rem;
+}
+
+.status-indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--success);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+  flex-shrink: 0;
+}
+
+.status-indicator-dot.warn {
+  background-color: var(--warning);
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.2);
+}
+
+.status-indicator-dot.alert {
+  background-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
+
+.summary-status-header h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.summary-status-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.water-key-points {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.key-point-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  background-color: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.85rem;
+}
+
+.point-icon {
+  font-size: 1.25rem;
   line-height: 1;
 }
 
-.analysis-details h4 {
-  font-size: 0.95rem;
+.point-label {
+  display: block;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-main);
-  margin-bottom: 0.25rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.2rem;
 }
 
-.analysis-details p {
+.point-text {
   font-size: 0.825rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-
-.water-reference-table h4 {
-  font-size: 0.85rem;
   color: var(--text-main);
-  margin-bottom: 0.6rem;
+  line-height: 1.35;
 }
 
-.table-simple {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8rem;
+.water-history-text-section {
+  margin-top: 1rem;
 }
 
-.table-simple th,
-.table-simple td {
-  padding: 0.5rem 0.65rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
+.history-text-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.table-simple th {
-  background-color: var(--bg-subtle);
-  color: var(--text-muted);
+.history-text-header h4 {
+  font-size: 0.875rem;
   font-weight: 600;
+  color: var(--text-main);
 }
 
-/* ========================================================
-   LOG RIWAYAT PAKAN
-   ======================================================== */
-.log-table-wrapper {
+.history-note {
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+
+.water-readings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   max-height: 250px;
   overflow-y: auto;
+  padding-right: 0.25rem;
 }
 
-.log-table {
-  width: 100%;
-  border-collapse: collapse;
+.reading-text-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  background-color: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   font-size: 0.825rem;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  gap: 0.5rem;
 }
 
-.log-table th,
-.log-table td {
-  padding: 0.65rem 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-
-.log-table th {
-  position: sticky;
-  top: 0;
-  background-color: var(--bg-subtle);
-  color: var(--text-muted);
-  font-weight: 600;
-  z-index: 1;
-}
-
-.log-table tr:hover {
+.reading-text-row:hover {
   background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.reading-time-col {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.reading-info-col {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  flex: 1;
+  color: var(--text-main);
+}
+
+.reading-data {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.reading-data .separator {
+  color: var(--text-light);
+}
+
+.reading-status-col {
+  flex-shrink: 0;
 }
 
 /* ========================================================
@@ -1111,6 +1327,20 @@ input:checked + .slider:before {
 
   .feed-options-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .water-key-points {
+    grid-template-columns: 1fr;
+  }
+
+  .reading-text-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .reading-time-col {
+    min-width: unset;
   }
 
   .schedule-inputs {

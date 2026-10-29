@@ -39,11 +39,15 @@ const DEFAULT_STATE = {
     { id: 3, time: '17:00', grams: 50, enabled: true }
   ],
 
-  // Log Aktivitas
-  logs: [
-    { time: '12:30:15', activity: 'Pakan Otomatis (Jadwal Siang)', grams: 50, status: 'Berhasil' },
-    { time: '09:45:00', activity: 'Pakan Manual', grams: 20, status: 'Berhasil' },
-    { time: '07:30:08', activity: 'Pakan Otomatis (Jadwal Pagi)', grams: 50, status: 'Berhasil' }
+  // Riwayat Pembacaan Sensor Air Berbasis Teks
+  waterReadings: [
+    { time: '17:00:00', temp: 28.5, turb: 18, statusText: 'Ideal & Normal', statusClass: 'status-safe' },
+    { time: '16:30:00', temp: 28.4, turb: 17, statusText: 'Ideal & Normal', statusClass: 'status-safe' },
+    { time: '16:00:00', temp: 28.6, turb: 18, statusText: 'Ideal & Normal', statusClass: 'status-safe' },
+    { time: '15:30:00', temp: 28.7, turb: 19, statusText: 'Ideal & Normal', statusClass: 'status-safe' },
+    { time: '15:00:00', temp: 28.5, turb: 17, statusText: 'Ideal & Normal', statusClass: 'status-safe' },
+    { time: '14:30:00', temp: 28.1, turb: 16, statusText: 'Ideal & Normal', statusClass: 'status-safe' },
+    { time: '14:00:00', temp: 27.8, turb: 15, statusText: 'Ideal & Normal', statusClass: 'status-safe' }
   ]
 };
 
@@ -54,7 +58,12 @@ function loadState() {
   try {
     const saved = localStorage.getItem('pondmaster_state');
     if (saved) {
-      return { ...DEFAULT_STATE, ...JSON.parse(saved) };
+      const parsed = JSON.parse(saved);
+      const merged = { ...DEFAULT_STATE, ...parsed };
+      if (!merged.waterReadings || !Array.isArray(merged.waterReadings) || merged.waterReadings.length === 0) {
+        merged.waterReadings = [...DEFAULT_STATE.waterReadings];
+      }
+      return merged;
     }
   } catch (e) {
     console.warn('Gagal memuat state dari storage, memakai default:', e);
@@ -125,13 +134,21 @@ const newScheduleGrams = document.getElementById('newScheduleGrams');
 const btnSaveSchedule = document.getElementById('btnSaveSchedule');
 const scheduleListContainer = document.getElementById('scheduleListContainer');
 
-// Analisis & Log
-const analysisBox = document.getElementById('airAnalysisBox');
-const analysisIcon = document.getElementById('analysisIcon');
-const analysisTitle = document.getElementById('analysisTitle');
-const analysisDesc = document.getElementById('analysisDesc');
-const logTableBody = document.getElementById('logTableBody');
-const btnClearLog = document.getElementById('btnClearLog');
+// Pemantauan Air Berbasis Teks
+const waterStatusBadge = document.getElementById('waterStatusBadge');
+const waterSummaryDot = document.getElementById('waterSummaryDot');
+const waterStatusSummaryTitle = document.getElementById('waterStatusSummaryTitle');
+const waterStatusSummaryDesc = document.getElementById('waterStatusSummaryDesc');
+const waterTempSummaryText = document.getElementById('waterTempSummaryText');
+const waterTurbSummaryText = document.getElementById('waterTurbSummaryText');
+const waterReadingsList = document.getElementById('waterReadingsList');
+
+// Layar Intro / Splash
+const introSplash = document.getElementById('introSplash');
+const introProgressBar = document.getElementById('introProgressBar');
+const introStatusText = document.getElementById('introStatusText');
+const introSkipBtn = document.getElementById('introSkipBtn');
+let introFinished = false;
 
 // Modal Pengaturan
 const btnOpenSettings = document.getElementById('btnOpenSettings');
@@ -149,16 +166,18 @@ const btnTestConnection = document.getElementById('btnTestConnection');
 const testConnectionResult = document.getElementById('testConnectionResult');
 
 let selectedFeedGrams = 25;
-let sensorChart = null;
 let dataFetchTimer = null;
 let lastTriggeredScheduleMinute = '';
+let lastWaterLogTime = 0;
 
 // ========================================================
 // 3. INISIALISASI APLIKASI
 // ========================================================
 document.addEventListener('DOMContentLoaded', () => {
+  initIntroSplash();
   initDateTime();
-  initChart();
+  renderWaterTextSummary();
+  renderWaterReadingsList();
   renderAllState();
   initEventListeners();
   calculateFeedRecommendation();
@@ -166,7 +185,59 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ========================================================
-// 4. WAKTU & JAM SISTEM
+// 4. LAYAR INTRO / SPLASH SCREEN
+// ========================================================
+function dismissIntro() {
+  if (introFinished || !introSplash) return;
+  introFinished = true;
+  introSplash.classList.add('fade-out');
+  setTimeout(() => {
+    introSplash.style.display = 'none';
+  }, 700);
+}
+
+function initIntroSplash() {
+  if (!introSplash) return;
+
+  // Tombol lewati intro langsung ke website utama
+  if (introSkipBtn) {
+    introSkipBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismissIntro();
+    });
+  }
+
+  // Klik di sembarang area splash screen juga bisa langsung masuk
+  introSplash.addEventListener('click', () => {
+    dismissIntro();
+  });
+
+  // Animasi progress bar & pesan status pembuka (total ~1.8 detik)
+  setTimeout(() => {
+    if (introFinished) return;
+    if (introProgressBar) introProgressBar.style.width = '35%';
+    if (introStatusText) introStatusText.textContent = 'Memeriksa sensor suhu & kekeruhan...';
+  }, 350);
+
+  setTimeout(() => {
+    if (introFinished) return;
+    if (introProgressBar) introProgressBar.style.width = '70%';
+    if (introStatusText) introStatusText.textContent = 'Menghubungkan kontrol pakan otomatis...';
+  }, 850);
+
+  setTimeout(() => {
+    if (introFinished) return;
+    if (introProgressBar) introProgressBar.style.width = '100%';
+    if (introStatusText) introStatusText.textContent = 'Sistem kolam siap digunakan!';
+  }, 1350);
+
+  setTimeout(() => {
+    dismissIntro();
+  }, 1850);
+}
+
+// ========================================================
+// 5. WAKTU & JAM SISTEM
 // ========================================================
 function initDateTime() {
   const updateClock = () => {
@@ -186,13 +257,14 @@ function initDateTime() {
 }
 
 // ========================================================
-// 5. UPDATE TAMPILAN SENSOR & PARAMETER (UI)
+// 6. UPDATE TAMPILAN SENSOR & PARAMETER (UI)
 // ========================================================
 function renderAllState() {
   renderSensors();
   renderFeedMetrics();
   renderSchedules();
-  renderLogs();
+  renderWaterTextSummary();
+  renderWaterReadingsList();
   updateNextScheduleBadge();
   updateConnectionBadge();
 }
@@ -270,48 +342,11 @@ function updateTurbidity(val) {
   } else {
     turbidityBarEl.style.backgroundColor = '#0284c7';
   }
-
-  // Update ringkasan analisis kualitas air
-  updateWaterAnalysis();
 }
 
 function renderSensors() {
   updateTemperature(appState.currentTemp);
   updateTurbidity(appState.currentTurbidity);
-}
-
-/**
- * Update Analisis Kondisi Air dan Saran Tindakan
- */
-function updateWaterAnalysis() {
-  const temp = appState.currentTemp;
-  const ntu = appState.currentTurbidity;
-
-  if (ntu > 50 && temp > 31) {
-    analysisBox.style.backgroundColor = '#fee2e2';
-    analysisBox.style.borderColor = 'rgba(220, 38, 38, 0.3)';
-    analysisIcon.textContent = '⚠️';
-    analysisTitle.textContent = 'Peringatan: Air Keruh & Suhu Hangat!';
-    analysisDesc.textContent = `Kekeruhan tinggi (${ntu} NTU) dan suhu (${temp}°C) mengurangi kadar oksigen kolam. Disarankan segera kuras/sirkulasi air 30% dan kurangi takaran pakan sementara waktu agar sisa pakan tidak membusuk.`;
-  } else if (ntu > 50) {
-    analysisBox.style.backgroundColor = '#fef3c7';
-    analysisBox.style.borderColor = 'rgba(217, 119, 6, 0.3)';
-    analysisIcon.textContent = '💧';
-    analysisTitle.textContent = 'Kondisi Air Mulai Keruh';
-    analysisDesc.textContent = `Tingkat kekeruhan ${ntu} NTU terdeteksi cukup pekat. Periksa filter kolam atau bersihkan endapan kotoran di dasar kolam agar nafsu makan ikan tetap terjaga.`;
-  } else if (temp < 24) {
-    analysisBox.style.backgroundColor = '#fef3c7';
-    analysisBox.style.borderColor = 'rgba(217, 119, 6, 0.3)';
-    analysisIcon.textContent = '❄️';
-    analysisTitle.textContent = 'Suhu Air Cenderung Dingin';
-    analysisDesc.textContent = `Suhu kolam saat ini ${temp}°C. Metabolisme ikan melambat pada suhu dingin, ikan mungkin lambat merespons pakan. Beri pakan dalam porsi sedikit demi sedikit.`;
-  } else {
-    analysisBox.style.backgroundColor = '#dcfce7';
-    analysisBox.style.borderColor = 'rgba(22, 163, 74, 0.3)';
-    analysisIcon.textContent = '✅';
-    analysisTitle.textContent = 'Kondisi Air Kolam Sangat Baik';
-    analysisDesc.textContent = `Suhu ${temp}°C dan kekeruhan ${ntu} NTU berada pada rentang ideal budidaya. Ikan nyaman, metabolisme optimal, dan dapat mengonsumsi pakan dengan lahap.`;
-  }
 }
 
 /**
@@ -348,7 +383,7 @@ function renderFeedMetrics() {
 }
 
 // ========================================================
-// 6. LOGIKA PEMBERIAN PAKAN (DISPENSER)
+// 7. LOGIKA PEMBERIAN PAKAN (DISPENSER)
 // ========================================================
 
 /**
@@ -395,24 +430,8 @@ async function dispenseFeed(grams, source = 'Manual') {
     appState.feedToday += grams;
     appState.feedCountToday += 1;
 
-    // Catat ke Log
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    appState.logs.unshift({
-      time: timeStr,
-      activity: source === 'Manual' ? 'Pakan Manual' : `Pakan Otomatis (${source})`,
-      grams: grams,
-      status: 'Berhasil'
-    });
-
-    // Batasi log maksimal 20 item
-    if (appState.logs.length > 20) {
-      appState.logs.pop();
-    }
-
     saveState();
     renderFeedMetrics();
-    renderLogs();
 
     feedActionStatusText.textContent = `Berhasil! ${grams} gram pakan telah dituangkan.`;
     setTimeout(() => {
@@ -429,7 +448,7 @@ async function dispenseFeed(grams, source = 'Manual') {
 }
 
 // ========================================================
-// 7. KALKULATOR KEBUTUHAN PAKAN
+// 8. KALKULATOR KEBUTUHAN PAKAN
 // ========================================================
 function calculateFeedRecommendation() {
   const fishCount = parseInt(calcFishCount.value) || 0;
@@ -452,7 +471,7 @@ function calculateFeedRecommendation() {
 }
 
 // ========================================================
-// 8. JADWAL PAKAN OTOMATIS
+// 9. JADWAL PAKAN OTOMATIS
 // ========================================================
 function renderSchedules() {
   scheduleListContainer.innerHTML = '';
@@ -547,135 +566,131 @@ function checkScheduledFeed(nowDate) {
 }
 
 // ========================================================
-// 9. LOG AKTIVITAS (RIWAYAT PAKAN)
+// 10. PEMANTAUAN KUALITAS AIR BERBASIS TEKS (PENGGANTI GRAFIK)
 // ========================================================
-function renderLogs() {
-  logTableBody.innerHTML = '';
-  if (appState.logs.length === 0) {
-    logTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding: 1rem;">Belum ada riwayat pakan</td></tr>';
+
+/**
+ * Menentukan status kondisi air dan keterangan teks
+ */
+function getWaterCondition(temp, turb) {
+  if (turb > 50 || temp > 32 || temp < 23) {
+    return {
+      title: 'Peringatan: Kondisi Air Kolam Kritis!',
+      badge: 'Perlu Tindakan',
+      dotClass: 'alert',
+      pillClass: 'status-alert',
+      statusLabel: 'Kritis / Waspada',
+      desc: `Suhu ${temp.toFixed(1)}°C dan kekeruhan ${turb} NTU berisiko bagi kesehatan ikan. Segera kuras atau sirkulasi air 30% dan tunda pemberian pakan berlebih.`
+    };
+  } else if (turb >= 25 || temp < 25 || temp > 30.5) {
+    return {
+      title: 'Kondisi Air Memerlukan Perhatian',
+      badge: 'Perlu Pengawasan',
+      dotClass: 'warn',
+      pillClass: 'status-warn',
+      statusLabel: 'Perlu Pantauan',
+      desc: `Parameter air berada di batas toleransi (Suhu: ${temp.toFixed(1)}°C, Kekeruhan: ${turb} NTU). Amati keaktifan ikan dan pastikan aerator kolam bekerja normal.`
+    };
+  } else {
+    return {
+      title: 'Kondisi Air Kolam Sangat Baik',
+      badge: 'Kondisi Ideal',
+      dotClass: '',
+      pillClass: 'status-safe',
+      statusLabel: 'Ideal & Aman',
+      desc: `Suhu air (${temp.toFixed(1)}°C) dan tingkat kekeruhan (${turb} NTU) berada pada rentang ideal budidaya. Ikan nyaman, sehat, dan dapat mengonsumsi pakan dengan lahap.`
+    };
+  }
+}
+
+/**
+ * Memperbarui ringkasan teks terkini
+ */
+function renderWaterTextSummary() {
+  const temp = appState.currentTemp;
+  const turb = appState.currentTurbidity;
+  const cond = getWaterCondition(temp, turb);
+
+  if (waterStatusBadge) waterStatusBadge.textContent = cond.badge;
+  if (waterSummaryDot) {
+    waterSummaryDot.className = `status-indicator-dot ${cond.dotClass}`;
+  }
+  if (waterStatusSummaryTitle) waterStatusSummaryTitle.textContent = cond.title;
+  if (waterStatusSummaryDesc) waterStatusSummaryDesc.textContent = cond.desc;
+
+  if (waterTempSummaryText) {
+    let tempNote = 'Normal & Sesuai Standar (26 - 30 °C)';
+    if (temp < 25) tempNote = 'Cenderung Dingin (< 25 °C)';
+    else if (temp > 30.5) tempNote = 'Hangat / Panas (> 30.5 °C)';
+    waterTempSummaryText.innerHTML = `<strong>${temp.toFixed(1)} °C</strong> — ${tempNote}`;
+  }
+
+  if (waterTurbSummaryText) {
+    let turbNote = 'Air Jernih & Bersih (< 25 NTU)';
+    if (turb > 50) turbNote = 'Keruh Pekat (> 50 NTU)';
+    else if (turb >= 25) turbNote = 'Mulai Sedikit Keruh (25 - 50 NTU)';
+    waterTurbSummaryText.innerHTML = `<strong>${turb} NTU</strong> — ${turbNote}`;
+  }
+}
+
+/**
+ * Menampilkan riwayat pembacaan berkala dalam bentuk teks yang rapi
+ */
+function renderWaterReadingsList() {
+  if (!waterReadingsList) return;
+  waterReadingsList.innerHTML = '';
+
+  if (!appState.waterReadings || appState.waterReadings.length === 0) {
+    waterReadingsList.innerHTML = '<p class="section-desc" style="text-align:center; padding: 1rem;">Belum ada riwayat pembacaan sensor.</p>';
     return;
   }
 
-  appState.logs.forEach(log => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${log.time}</td>
-      <td><strong>${log.activity}</strong></td>
-      <td>${log.grams} gr</td>
-      <td><span class="status-pill status-safe">${log.status}</span></td>
+  appState.waterReadings.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'reading-text-row';
+    row.innerHTML = `
+      <div class="reading-time-col">
+        <span class="reading-clock">🕒 ${item.time}</span>
+      </div>
+      <div class="reading-info-col">
+        <div class="reading-data">
+          <span>Suhu: <strong>${item.temp}°C</strong></span>
+          <span class="separator">•</span>
+          <span>Kekeruhan: <strong>${item.turb} NTU</strong></span>
+        </div>
+      </div>
+      <div class="reading-status-col">
+        <span class="status-pill ${item.statusClass || 'status-safe'}">${item.statusText || 'Ideal'}</span>
+      </div>
     `;
-    logTableBody.appendChild(tr);
+    waterReadingsList.appendChild(row);
   });
 }
 
-// ========================================================
-// 10. GRAFIK SENSOR (CHART.JS)
-// ========================================================
-function initChart() {
-  const ctx = document.getElementById('sensorChart').getContext('2d');
+/**
+ * Menambahkan catatan pembacaan baru ke daftar teks
+ */
+function addWaterReading(temp, turb, timeStr) {
+  const cond = getWaterCondition(temp, turb);
+  if (!appState.waterReadings) appState.waterReadings = [];
 
-  // Label waktu awal
-  const initialLabels = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'];
-  const initialTempData = [27.8, 28.1, 28.5, 28.7, 28.6, 28.4, 28.5];
-  const initialTurbData = [15, 16, 17, 19, 18, 17, 18];
+  const timeLabel = timeStr || new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-  sensorChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: initialLabels,
-      datasets: [
-        {
-          label: 'Suhu Air (°C)',
-          data: initialTempData,
-          borderColor: '#f97316',
-          backgroundColor: 'rgba(249, 115, 22, 0.08)',
-          fill: true,
-          tension: 0.35,
-          yAxisID: 'yTemp',
-          borderWidth: 2,
-          pointRadius: 3
-        },
-        {
-          label: 'Kekeruhan (NTU)',
-          data: initialTurbData,
-          borderColor: '#0284c7',
-          backgroundColor: 'rgba(2, 132, 199, 0.08)',
-          fill: true,
-          tension: 0.35,
-          yAxisID: 'yTurb',
-          borderWidth: 2,
-          pointRadius: 3
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: 'index',
-        intersect: false,
-      },
-      plugins: {
-        legend: {
-          display: false // Menggunakan legend kustom yang lebih rapi di header card
-        },
-        tooltip: {
-          backgroundColor: '#1e293b',
-          titleFont: { family: 'Plus Jakarta Sans', size: 12 },
-          bodyFont: { family: 'Plus Jakarta Sans', size: 12 },
-          padding: 8,
-          cornerRadius: 6
-        }
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { font: { size: 11, family: 'Plus Jakarta Sans' }, color: '#94a3b8' }
-        },
-        yTemp: {
-          type: 'linear',
-          position: 'left',
-          min: 20,
-          max: 36,
-          ticks: {
-            callback: value => `${value}°C`,
-            font: { size: 11, family: 'Plus Jakarta Sans' },
-            color: '#f97316'
-          },
-          grid: { color: '#f1f5f9' }
-        },
-        yTurb: {
-          type: 'linear',
-          position: 'right',
-          min: 0,
-          max: 80,
-          ticks: {
-            callback: value => `${value} NTU`,
-            font: { size: 11, family: 'Plus Jakarta Sans' },
-            color: '#0284c7'
-          },
-          grid: { display: false }
-        }
-      }
-    }
+  appState.waterReadings.unshift({
+    time: timeLabel,
+    temp: parseFloat(temp.toFixed(1)),
+    turb: Math.round(turb),
+    statusText: cond.statusLabel,
+    statusClass: cond.pillClass
   });
-}
 
-function appendChartData(timeLabel, temp, turb) {
-  if (!sensorChart) return;
-
-  sensorChart.data.labels.push(timeLabel);
-  sensorChart.data.datasets[0].data.push(temp);
-  sensorChart.data.datasets[1].data.push(turb);
-
-  // Pertahankan maksimal 12 titik agar grafik tidak terlalu padat
-  if (sensorChart.data.labels.length > 12) {
-    sensorChart.data.labels.shift();
-    sensorChart.data.datasets[0].data.shift();
-    sensorChart.data.datasets[1].data.shift();
+  // Pertahankan maksimal 12 baris teks terakhir agar ringkas dan cepat dimuat
+  if (appState.waterReadings.length > 12) {
+    appState.waterReadings.pop();
   }
 
-  sensorChart.update();
+  saveState();
+  renderWaterReadingsList();
 }
 
 // ========================================================
@@ -701,9 +716,15 @@ function startSensorMonitoring() {
           }
 
           updateConnectionBadge(true);
+          renderWaterTextSummary();
 
-          const timeLabel = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-          appendChartData(timeLabel, appState.currentTemp, appState.currentTurbidity);
+          // Catat ke riwayat teks berkala (setiap 30 detik agar rapi)
+          const nowMs = Date.now();
+          if (nowMs - lastWaterLogTime >= 30000 || lastWaterLogTime === 0) {
+            lastWaterLogTime = nowMs;
+            const timeLabel = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            addWaterReading(appState.currentTemp, appState.currentTurbidity, timeLabel);
+          }
         } else {
           updateConnectionBadge(false);
         }
@@ -713,20 +734,25 @@ function startSensorMonitoring() {
       }
     } else {
       // Mode Simulasi: berikan sedikit fluktuasi alami yang realistis
-      // Fluktuasi suhu: ±0.1 ~ 0.2 °C
       const deltaTemp = (Math.random() - 0.5) * 0.2;
       let newTemp = appState.currentTemp + deltaTemp;
       newTemp = Math.max(26.0, Math.min(31.5, newTemp));
       updateTemperature(newTemp);
 
-      // Fluktuasi kekeruhan: ±1 NTU
       const deltaTurb = Math.floor((Math.random() - 0.48) * 3);
       let newTurb = appState.currentTurbidity + deltaTurb;
       newTurb = Math.max(12, Math.min(45, newTurb));
       updateTurbidity(newTurb);
 
-      const timeLabel = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-      appendChartData(timeLabel, appState.currentTemp, appState.currentTurbidity);
+      renderWaterTextSummary();
+
+      // Catat ke riwayat teks berkala (setiap 30 detik agar rapi)
+      const nowMs = Date.now();
+      if (nowMs - lastWaterLogTime >= 30000 || lastWaterLogTime === 0) {
+        lastWaterLogTime = nowMs;
+        const timeLabel = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        addWaterReading(appState.currentTemp, appState.currentTurbidity, timeLabel);
+      }
     }
   };
 
@@ -848,15 +874,6 @@ function initEventListeners() {
 
     addScheduleBox.style.display = 'none';
     btnToggleAddSchedule.textContent = '+ Tambah Jam';
-  });
-
-  // Hapus Log
-  btnClearLog.addEventListener('click', () => {
-    if (confirm('Apakah Anda yakin ingin menghapus seluruh catatan riwayat pakan?')) {
-      appState.logs = [];
-      saveState();
-      renderLogs();
-    }
   });
 
   // Modal Pengaturan Arduino
