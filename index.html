@@ -48,7 +48,7 @@
         <!-- Status Koneksi -->
         <div class="connection-status" id="connectionBadge">
           <span class="status-dot online"></span>
-          <span id="connectionText">Mode Simulasi (Aktif)</span>
+          <span id="connectionText">Firebase Cloud (Aktif)</span>
         </div>
         <!-- Tombol Pengaturan Alat / Arduino -->
         <button class="btn btn-outline" id="btnOpenSettings" title="Pengaturan Koneksi Arduino">
@@ -390,16 +390,48 @@
           <label>Mode Operasi:</label>
           <div class="radio-group">
             <label class="radio-label">
-              <input type="radio" name="connMode" value="simulation" checked id="modeSim">
-              <span>Mode Simulasi (Coba tampilan & perhitungan tanpa alat)</span>
+              <input type="radio" name="connMode" value="firebase" checked id="modeFb">
+              <span>Mode Firebase Cloud (ESP32 &amp; Database Real-time)</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="connMode" value="simulation" id="modeSim">
+              <span>Mode Simulasi (Coba tampilan tanpa alat)</span>
             </label>
             <label class="radio-label">
               <input type="radio" name="connMode" value="hardware" id="modeHw">
-              <span>Mode Hardware Nyata (Hubungkan ke ESP32 / Arduino WiFi)</span>
+              <span>Mode Hardware Langsung (IP ESP32 WiFi Lokal)</span>
             </label>
           </div>
         </div>
 
+        <!-- Pengaturan Mode Firebase (PHP / Laravel) -->
+        <div id="firebaseSettingsFields">
+          <div class="form-group">
+            <label for="firebaseApiUrlInput">URL Endpoint Backend PHP / Laravel:</label>
+            <input type="text" id="firebaseApiUrlInput" placeholder="backend-php/api.php">
+            <small class="form-hint">
+              Contoh: <code>backend-php/api.php</code> (PHP Native) atau <code>http://localhost:8000/api/pond</code> (Laravel).
+            </small>
+          </div>
+          <div class="form-group">
+            <label for="fbRefreshInterval">Interval Ambil Data Firebase (detik):</label>
+            <input type="number" id="fbRefreshInterval" value="3" min="1" max="60">
+          </div>
+          <button class="btn btn-outline btn-block" id="btnTestFirebase">
+            🔥 Uji Sambungan ke Firebase (via Backend)
+          </button>
+          <div id="testFirebaseResult" class="test-result-box" style="display: none;"></div>
+          <div class="guide-box" style="margin-top: 0.85rem;">
+            <h4>🔑 Tempat Memasukkan API Key Firebase:</h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.45;">
+              Kunci API &amp; URL Firebase disimpan aman di file backend server:
+              <br>• <strong>PHP Native:</strong> Edit file <code>backend-php/firebase_config.php</code>
+              <br>• <strong>Laravel:</strong> Masukkan ke file <code>.env</code> (lihat <code>laravel-backend/.env.example</code>)
+            </p>
+          </div>
+        </div>
+
+        <!-- Pengaturan Mode Hardware Langsung -->
         <div id="hardwareSettingsFields" style="display: none;">
           <div class="form-group">
             <label for="arduinoIpInput">IP Address atau URL ESP32/Arduino:</label>

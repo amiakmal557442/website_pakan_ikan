@@ -31,11 +31,23 @@ Aplikasi web pemantau kolam dan pengendali pakan ikan otomatis berbasis **HTML, 
 
 ```text
 website Arduino/
-├── index.html          # Struktur halaman antarmuka web
-├── style.css           # Desain tampilan bersih & responsif (Laptop & Handphone)
-├── script.js           # Logika perhitungan suhu, pakan gram, kekeruhan teks, & API
-├── arduino_code.ino    # Sketsa program mikrokontroler ESP32/ESP8266 siap pakai
-└── README.md           # Panduan penggunaan
+├── index.html              # Antarmuka web dashboard + Splash Screen
+├── style.css               # Desain tampilan bersih & responsif (Laptop & Handphone)
+├── script.js               # Logika perhitungan suhu, pakan, teks report, & API Firebase
+├── backend-php/            # Backend PHP Native untuk integrasi Firebase REST API
+│   ├── firebase_config.php # >>> TEMPAT MEMASUKKAN API KEY & DATABASE URL FIREBASE <<<
+│   ├── FirebaseService.php # Helper cURL CRUD ke Firebase Realtime Database
+│   └── api.php             # REST API endpoint status, feed, update_sensor, schedule
+├── laravel-backend/        # Struktur Backend untuk Framework Laravel
+│   ├── .env.example        # >>> TEMPAT MEMASUKKAN CONFIG FIREBASE DI LARAVEL <<<
+│   ├── config/firebase.php
+│   ├── app/Services/FirebasePondService.php
+│   ├── app/Http/Controllers/PondController.php
+│   └── routes/api.php
+├── arduino_firebase.ino    # Program ESP32 siap pakai terhubung langsung ke Firebase
+├── arduino_code.ino        # Program ESP32 mode WebServer lokal (tanpa cloud)
+├── README_FIREBASE.md      # Panduan detail langkah integrasi Firebase
+└── README.md               # Panduan penggunaan umum
 ```
 
 ---

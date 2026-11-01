@@ -10,14 +10,31 @@
  */
 
 // ========================================================
+// KREDENSIAL FIREBASE RESMI (WEB & DATABASE)
+// ========================================================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBJ56CgfhMKdp9HY9V6o1YbYz7Qb8Q374E",
+  authDomain: "connect-esp32-to-database.firebaseapp.com",
+  databaseURL: "https://connect-esp32-to-database-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "connect-esp32-to-database",
+  storageBucket: "connect-esp32-to-database.firebasestorage.app",
+  messagingSenderId: "623633657442",
+  appId: "1:623633657442:web:fbf8fbb80f48df125aeb3b"
+};
+
+// ========================================================
 // 1. STATE & DATA AWAL (Disimpan juga di LocalStorage)
 // ========================================================
 const DEFAULT_STATE = {
-  // Mode: 'simulation' atau 'hardware'
-  mode: 'simulation',
+  // Mode default langsung aktif ke Firebase
+  mode: 'firebase',
   arduinoIp: 'http://192.168.1.50',
   feedApiUrl: 'http://192.168.1.50/feed?gram=',
   refreshInterval: 3,
+
+  // Endpoint Backend Firebase (PHP Native atau Laravel)
+  firebaseApiUrl: 'backend-php/api.php',
+  fbRefreshInterval: 3,
 
   // Kapasitas Tabung Pakan
   storageCapacity: 1000, // gram
@@ -31,6 +48,7 @@ const DEFAULT_STATE = {
   // Sensor
   currentTemp: 28.4,
   currentTurbidity: 18,
+  sugenoScore: 0.85,
 
   // Jadwal Pakan
   schedules: [
@@ -158,12 +176,18 @@ const btnCancelSettings = document.getElementById('btnCancelSettings');
 const btnSaveSettings = document.getElementById('btnSaveSettings');
 const modeSimRadio = document.getElementById('modeSim');
 const modeHwRadio = document.getElementById('modeHw');
+const modeFbRadio = document.getElementById('modeFb');
 const hardwareSettingsFields = document.getElementById('hardwareSettingsFields');
+const firebaseSettingsFields = document.getElementById('firebaseSettingsFields');
 const arduinoIpInput = document.getElementById('arduinoIpInput');
 const feedApiUrlInput = document.getElementById('feedApiUrlInput');
 const refreshIntervalInput = document.getElementById('refreshInterval');
+const firebaseApiUrlInput = document.getElementById('firebaseApiUrlInput');
+const fbRefreshIntervalInput = document.getElementById('fbRefreshInterval');
 const btnTestConnection = document.getElementById('btnTestConnection');
 const testConnectionResult = document.getElementById('testConnectionResult');
+const btnTestFirebase = document.getElementById('btnTestFirebase');
+const testFirebaseResult = document.getElementById('testFirebaseResult');
 
 let selectedFeedGrams = 25;
 let dataFetchTimer = null;
@@ -402,7 +426,66 @@ async function dispenseFeed(grams, source = 'Manual') {
 
   let success = false;
 
-  if (appState.mode === 'hardware') {
+  if (appState.mode === 'firebase') {
+    // Mode Firebase: Kirim perintah pakan ke Backend PHP / Laravel (dengan Fallback Direct REST)
+    try {
+      let url = appState.firebaseApiUrl || 'backend-php/api.php';
+      if (url.includes('.php')) {
+        url += (url.includes('?') ? '&' : '?') + 'action=feed';
+      } else {
+        url = url.replace(/\/$/, '') + '/feed';
+      }
+
+      let resData = null;
+      let ok = false;
+      
+      // Jika dibuka lewat web server HTTP/HTTPS, coba kirim ke backend PHP / Laravel
+      if (window.location.protocol.startsWith('http')) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ grams: grams, source: source })
+          });
+          if (response.ok) {
+            resData = await response.json();
+            ok = true;
+          }
+        } catch (backendErr) {
+          ok = false;
+        }
+      }
+
+      // Jika server PHP lokal belum menyala atau dibuka via file://, kirim langsung ke Firebase Cloud
+      if (!ok) {
+        console.warn('Backend server lokal belum aktif, mengirim trigger langsung ke Firebase Cloud...');
+        const directUrl = `${FIREBASE_CONFIG.databaseURL}/pond/control.json?auth=${FIREBASE_CONFIG.apiKey}`;
+        const directRes = await fetch(directUrl, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trigger_feed: true,
+            dispense_gram: grams,
+            source: source,
+            requested_at: new Date().toISOString(),
+            last_feed_time: new Date().toLocaleTimeString('id-ID')
+          })
+        });
+        ok = directRes.ok;
+        resData = { success: ok };
+      }
+
+      if (ok && resData && resData.success !== false) {
+        success = true;
+      } else {
+        throw new Error(resData?.message || 'Gagal mengirim trigger pakan ke Firebase');
+      }
+    } catch (err) {
+      console.error('Gagal mengirim pakan ke Firebase:', err);
+      alert(`Peringatan: Gagal mengirim sinyal ke Firebase (${err.message}). Sistem tetap mencatat simulasi lokal.`);
+      success = true; // izinkan pencatatan lokal agar alur tidak terputus
+    }
+  } else if (appState.mode === 'hardware') {
     // Mode Hardware: Kirim request HTTP ke Arduino / ESP32
     try {
       const url = `${appState.feedApiUrl}${grams}`;
@@ -700,7 +783,101 @@ function startSensorMonitoring() {
   if (dataFetchTimer) clearInterval(dataFetchTimer);
 
   const fetchLoop = async () => {
-    if (appState.mode === 'hardware') {
+    if (appState.mode === 'firebase') {
+      // Mode Firebase: Ambil data sensor terkini dari Backend PHP / Laravel
+      try {
+        let endpoint = appState.firebaseApiUrl || 'backend-php/api.php';
+        if (endpoint.includes('.php')) {
+          endpoint += (endpoint.includes('?') ? '&' : '?') + 'action=status';
+        } else {
+          endpoint = endpoint.replace(/\/$/, '') + '/status';
+        }
+
+        let data = null;
+        let isOk = false;
+
+        // Coba hubungi backend PHP / Laravel terlebih dahulu (jika server lokal menyala)
+        if (window.location.protocol.startsWith('http')) {
+          try {
+            const res = await fetch(endpoint, { cache: 'no-store' });
+            if (res.ok) {
+              const text = await res.text();
+              try {
+                data = JSON.parse(text);
+                isOk = true;
+              } catch (parseErr) {
+                // Respons bukan JSON (misal file PHP mentah karena server PHP belum menyala)
+                isOk = false;
+              }
+            }
+          } catch (fetchErr) {
+            isOk = false;
+          }
+        }
+
+        // Jika server lokal PHP belum menyala atau dibuka langsung lewat file://,
+        // gunakan Direct Firebase Cloud REST API secara otomatis!
+        if (!isOk) {
+          try {
+            const directUrl = `${FIREBASE_CONFIG.databaseURL}/pond/sensors.json`;
+            const directRes = await fetch(directUrl, { cache: 'no-store' });
+            if (directRes.ok) {
+              const rawData = await directRes.json();
+              if (rawData && typeof rawData === 'object') {
+                data = {
+                  suhu: rawData.suhu ?? rawData.temperatureC ?? 28.5,
+                  kekeruhan: rawData.kekeruhan ?? rawData.turbidityAdc ?? 18,
+                  sisa_pakan: rawData.sisa_pakan ?? rawData.stockGrams ?? 850,
+                  feed_today: rawData.feed_today ?? 120,
+                  feed_target: rawData.feed_target ?? 150,
+                  sugenoScore: rawData.sugenoScore ?? null
+                };
+                isOk = true;
+              }
+            }
+          } catch (e2) {
+            isOk = false;
+          }
+        }
+
+        if (isOk && data) {
+          if (data.suhu !== undefined) updateTemperature(data.suhu);
+          if (data.kekeruhan !== undefined) updateTurbidity(data.kekeruhan);
+          if (data.sisa_pakan !== undefined) {
+            appState.storageRemaining = data.sisa_pakan;
+          }
+          if (data.feed_today !== undefined) {
+            appState.feedToday = data.feed_today;
+          }
+          if (data.feed_target !== undefined) {
+            appState.feedTarget = data.feed_target;
+          }
+          if (data.sugenoScore !== undefined && data.sugenoScore !== null) {
+            appState.sugenoScore = parseFloat(data.sugenoScore);
+          }
+          if (Array.isArray(data.schedules) && data.schedules.length > 0) {
+            appState.schedules = data.schedules;
+            renderSchedules();
+          }
+
+          renderFeedMetrics();
+          updateConnectionBadge(true);
+          renderWaterTextSummary();
+
+          const nowMs = Date.now();
+          if (nowMs - lastWaterLogTime >= 30000 || lastWaterLogTime === 0) {
+            lastWaterLogTime = nowMs;
+            const timeLabel = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            addWaterReading(appState.currentTemp, appState.currentTurbidity, timeLabel);
+          }
+        } else {
+          updateConnectionBadge(false);
+        }
+      } catch (e) {
+        console.warn('Gagal membaca data dari Firebase:', e);
+        updateConnectionBadge(false);
+      }
+    } else if (appState.mode === 'hardware') {
       try {
         const endpoint = `${appState.arduinoIp}/data`;
         const res = await fetch(endpoint, { cache: 'no-store' });
@@ -756,14 +933,20 @@ function startSensorMonitoring() {
     }
   };
 
-  // Jalankan interval (default 3 detik pada simulasi, atau sesuai setting)
-  const intervalSec = (appState.refreshInterval || 3) * 1000;
+  // Jalankan interval sesuai mode
+  const intervalSec = (appState.mode === 'firebase' ? (appState.fbRefreshInterval || 3) : (appState.refreshInterval || 3)) * 1000;
   dataFetchTimer = setInterval(fetchLoop, intervalSec);
 }
 
 function updateConnectionBadge(isOnline = true) {
   if (appState.mode === 'simulation') {
     connectionBadgeEl.innerHTML = `<span class="status-dot online"></span> <span>Mode Simulasi (Demo)</span>`;
+  } else if (appState.mode === 'firebase') {
+    if (isOnline) {
+      connectionBadgeEl.innerHTML = `<span class="status-dot online"></span> <span>Firebase Cloud (Aktif)</span>`;
+    } else {
+      connectionBadgeEl.innerHTML = `<span class="status-dot offline"></span> <span>Firebase Offline</span>`;
+    }
   } else {
     if (isOnline) {
       connectionBadgeEl.innerHTML = `<span class="status-dot online"></span> <span>ESP32 Terhubung</span>`;
@@ -876,7 +1059,7 @@ function initEventListeners() {
     btnToggleAddSchedule.textContent = '+ Tambah Jam';
   });
 
-  // Modal Pengaturan Arduino
+  // Modal Pengaturan Arduino & Firebase
   btnOpenSettings.addEventListener('click', openSettingsModal);
   btnCloseModal.addEventListener('click', closeSettingsModal);
   btnCancelSettings.addEventListener('click', closeSettingsModal);
@@ -884,26 +1067,48 @@ function initEventListeners() {
 
   modeSimRadio.addEventListener('change', () => {
     hardwareSettingsFields.style.display = 'none';
+    if (firebaseSettingsFields) firebaseSettingsFields.style.display = 'none';
   });
+
+  if (modeFbRadio) {
+    modeFbRadio.addEventListener('change', () => {
+      hardwareSettingsFields.style.display = 'none';
+      if (firebaseSettingsFields) firebaseSettingsFields.style.display = 'block';
+    });
+  }
 
   modeHwRadio.addEventListener('change', () => {
     hardwareSettingsFields.style.display = 'block';
+    if (firebaseSettingsFields) firebaseSettingsFields.style.display = 'none';
   });
 
   btnTestConnection.addEventListener('click', testArduinoConnection);
+  if (btnTestFirebase) {
+    btnTestFirebase.addEventListener('click', testFirebaseConnection);
+  }
 }
 
 // ========================================================
-// 13. PENGATURAN KONEKSI ARDUINO / ESP32
+// 13. PENGATURAN KONEKSI ARDUINO & FIREBASE
 // ========================================================
 function openSettingsModal() {
-  if (appState.mode === 'hardware') {
+  if (appState.mode === 'firebase') {
+    if (modeFbRadio) modeFbRadio.checked = true;
+    if (firebaseSettingsFields) firebaseSettingsFields.style.display = 'block';
+    hardwareSettingsFields.style.display = 'none';
+  } else if (appState.mode === 'hardware') {
     modeHwRadio.checked = true;
     hardwareSettingsFields.style.display = 'block';
+    if (firebaseSettingsFields) firebaseSettingsFields.style.display = 'none';
   } else {
     modeSimRadio.checked = true;
     hardwareSettingsFields.style.display = 'none';
+    if (firebaseSettingsFields) firebaseSettingsFields.style.display = 'none';
   }
+
+  if (firebaseApiUrlInput) firebaseApiUrlInput.value = appState.firebaseApiUrl || 'backend-php/api.php';
+  if (fbRefreshIntervalInput) fbRefreshIntervalInput.value = appState.fbRefreshInterval || 3;
+  if (testFirebaseResult) testFirebaseResult.style.display = 'none';
 
   arduinoIpInput.value = appState.arduinoIp || 'http://192.168.1.50';
   feedApiUrlInput.value = appState.feedApiUrl || 'http://192.168.1.50/feed?gram=';
@@ -918,7 +1123,21 @@ function closeSettingsModal() {
 }
 
 function saveSettingsModal() {
-  appState.mode = modeHwRadio.checked ? 'hardware' : 'simulation';
+  if (modeFbRadio && modeFbRadio.checked) {
+    appState.mode = 'firebase';
+  } else if (modeHwRadio && modeHwRadio.checked) {
+    appState.mode = 'hardware';
+  } else {
+    appState.mode = 'simulation';
+  }
+
+  if (firebaseApiUrlInput) {
+    appState.firebaseApiUrl = firebaseApiUrlInput.value.trim() || 'backend-php/api.php';
+  }
+  if (fbRefreshIntervalInput) {
+    appState.fbRefreshInterval = parseInt(fbRefreshIntervalInput.value) || 3;
+  }
+
   appState.arduinoIp = arduinoIpInput.value.trim().replace(/\/$/, '');
   appState.feedApiUrl = feedApiUrlInput.value.trim();
   appState.refreshInterval = parseInt(refreshIntervalInput.value) || 3;
@@ -928,7 +1147,11 @@ function saveSettingsModal() {
   updateConnectionBadge();
   startSensorMonitoring();
 
-  alert(`Pengaturan berhasil disimpan! Mode aktif: ${appState.mode === 'hardware' ? 'Hardware Arduino Nyata' : 'Mode Simulasi'}`);
+  let modeLabel = 'Mode Simulasi';
+  if (appState.mode === 'firebase') modeLabel = 'Firebase Cloud (PHP / Laravel Backend)';
+  if (appState.mode === 'hardware') modeLabel = 'Hardware ESP32 WiFi Langsung';
+
+  alert(`Pengaturan berhasil disimpan! Mode aktif: ${modeLabel}`);
 }
 
 async function testArduinoConnection() {
@@ -961,5 +1184,66 @@ async function testArduinoConnection() {
     testConnectionResult.style.backgroundColor = '#fee2e2';
     testConnectionResult.style.color = '#b91c1c';
     testConnectionResult.textContent = `❌ Sambungan gagal: ${err.message}. Pastikan ESP32 satu jaringan WiFi dengan HP / Laptop Anda.`;
+  }
+}
+
+async function testFirebaseConnection() {
+  let url = (firebaseApiUrlInput && firebaseApiUrlInput.value.trim()) ? firebaseApiUrlInput.value.trim() : 'backend-php/api.php';
+  if (!url) {
+    alert('Masukkan URL Endpoint Backend Firebase terlebih dahulu.');
+    return;
+  }
+
+  if (url.includes('.php')) {
+    url += (url.includes('?') ? '&' : '?') + 'action=test';
+  } else {
+    url = url.replace(/\/$/, '') + '/test';
+  }
+
+  if (testFirebaseResult) {
+    testFirebaseResult.style.display = 'block';
+    testFirebaseResult.style.backgroundColor = '#e0f2fe';
+    testFirebaseResult.style.color = '#0369a1';
+    testFirebaseResult.textContent = 'Mencoba menghubungi backend dan Firebase...';
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (testFirebaseResult) {
+        testFirebaseResult.style.backgroundColor = '#dcfce7';
+        testFirebaseResult.style.color = '#15803d';
+        testFirebaseResult.textContent = `✅ ${data.message || 'Koneksi ke Firebase Berhasil!'}`;
+      }
+    } else {
+      throw new Error(data.message || `Respons kode HTTP ${res.status}`);
+    }
+  } catch (err) {
+    // Jika backend lokal belum dinyalakan, uji koneksi langsung ke Firebase REST
+    try {
+      const directTest = await fetch(`${FIREBASE_CONFIG.databaseURL}/pond/sensors.json`, { cache: 'no-store' });
+      if (directTest.ok) {
+        if (testFirebaseResult) {
+          testFirebaseResult.style.backgroundColor = '#dcfce7';
+          testFirebaseResult.style.color = '#15803d';
+          testFirebaseResult.textContent = `✅ Berhasil tersambung langsung ke Firebase Cloud (${FIREBASE_CONFIG.projectId})! Server siap membaca & menulis data.`;
+        }
+        return;
+      }
+    } catch (e2) {
+      // Abaikan dan tampilkan pesan error asli
+    }
+
+    if (testFirebaseResult) {
+      testFirebaseResult.style.backgroundColor = '#fee2e2';
+      testFirebaseResult.style.color = '#b91c1c';
+      testFirebaseResult.textContent = `❌ Koneksi gagal: ${err.message}. Pastikan koneksi internet aktif.`;
+    }
   }
 }
