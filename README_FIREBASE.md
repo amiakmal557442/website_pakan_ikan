@@ -64,16 +64,16 @@ Jika Anda menggunakan proyek Laravel, salin file dari folder `laravel-backend/`:
 
 ---
 
-### C. Pilihan 3: Pada Mikrokontroler Arduino / ESP32
-Buka file [`arduino_firebase.ino`](file:///c:/akmal%20project/website%20Arduino/arduino_firebase.ino) di Arduino IDE:
+### C. Mikrokontroler Arduino / ESP32 (Satu File Lengkap: `arduino_code.ino`)
+Buka file [`arduino_code.ino`](file:///c:/akmal%20project/website%20Arduino/arduino_code.ino) di Arduino IDE:
 ```cpp
-// >>> TEMPAT MEMASUKKAN WIFI & FIREBASE API KEY DI ARDUINO / ESP32 <<<
-const char* ssid          = "NAMA_WIFI_ANDA";
-const char* password      = "PASSWORD_WIFI_ANDA";
-const char* FIREBASE_HOST = "NAMA_PROJECT_ANDA-default-rtdb.firebaseio.com"; // tanpa https://
-const char* FIREBASE_AUTH = "MASUKKAN_DATABASE_SECRET_ATAU_API_KEY_DI_SINI";
+// >>> KREDENSIAL WIFI & FIREBASE ANDA TELAH TERINTEGRASI DI SINI <<<
+const char *WIFI_SSID         = "CirkitWifi"; // Ganti dengan WiFi Anda jika berpindah jaringan
+const char *WIFI_PASSWORD     = "";
+const char *FIREBASE_URL      = "https://connect-esp32-to-database-default-rtdb.asia-southeast1.firebasedatabase.app";
+const char *FIREBASE_AUTH_TOKEN = "AIzaSyBJ56CgfhMKdp9HY9V6o1YbYz7Qb8Q374E";
 ```
-Upload ke ESP32 Anda. ESP32 akan langsung mengirim data sensor ke Firebase dan mendengarkan perintah motor pakan.
+Upload ke ESP32 Anda. File ini telah menyatukan seluruh sensor kolam (DS18B20, Kekeruhan, HX711), Fuzzy Sugeno, jeda 5 jam, serta koneksi dua arah ke Firebase.
 
 ---
 

@@ -44,9 +44,8 @@ website Arduino/
 │   ├── app/Services/FirebasePondService.php
 │   ├── app/Http/Controllers/PondController.php
 │   └── routes/api.php
-├── arduino_firebase.ino    # Program ESP32 siap pakai terhubung langsung ke Firebase
-├── arduino_code.ino        # Program ESP32 mode WebServer lokal (tanpa cloud)
-├── README_FIREBASE.md      # Panduan detail langkah integrasi Firebase
+├── arduino_code.ino        # Program ESP32 UTAMA: Terintegrasi Firebase, Fuzzy Sugeno, Timbangan HX711, Sensor Suhu/Keruh & Servo
+├── README_FIREBASE.md      # Panduan detail integrasi kredensial Firebase
 └── README.md               # Panduan penggunaan umum
 ```
 
