@@ -64,6 +64,10 @@ const int GRAM_PER_CYCLE = 5; // Estimasi 1 siklus buka-tutup = 5 gram
 unsigned long lastSendTime = 0;
 const unsigned long sendInterval = 5000; // Kirim data sensor ke Firebase setiap 5 detik
 
+// Jeda pakan motor servo: 5 Jam (5 * 60 * 60 * 1000 ms)
+unsigned long lastFeedTime = 0;
+const unsigned long FEED_COOLDOWN_MS = 5UL * 60UL * 60UL * 1000UL;
+
 // ==============================================================================
 // FUNGSI BACA SENSOR
 // ==============================================================================
@@ -83,9 +87,20 @@ void updateSensors() {
 }
 
 // ==============================================================================
-// FUNGSI MOTOR DISPENSER PAKAN (SERVO)
+// FUNGSI MOTOR DISPENSER PAKAN (SERVO) DENGAN JEDA 5 JAM
 // ==============================================================================
-void putarServoPakan(int gram) {
+void putarServoPakan(int gram, bool bypassCooldown = false) {
+  unsigned long now = millis();
+  
+  // Pengaman hardware: jeda minimal 5 jam antar pemberian pakan
+  if (!bypassCooldown && lastFeedTime > 0 && (now - lastFeedTime < FEED_COOLDOWN_MS)) {
+    unsigned long sisaMenit = (FEED_COOLDOWN_MS - (now - lastFeedTime)) / 60000UL;
+    Serial.print("Pakan ditolak: Jeda 5 jam masih aktif! Tersisa ");
+    Serial.print(sisaMenit);
+    Serial.println(" menit.");
+    return;
+  }
+
   int jumlahSiklus = gram / GRAM_PER_CYCLE;
   if (jumlahSiklus < 1) jumlahSiklus = 1;
 
@@ -102,6 +117,8 @@ void putarServoPakan(int gram) {
 
   sisaPakanGram -= gram;
   if (sisaPakanGram < 0) sisaPakanGram = 0;
+
+  lastFeedTime = now;
 }
 
 // ==============================================================================

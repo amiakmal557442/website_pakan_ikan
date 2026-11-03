@@ -214,6 +214,25 @@
               <span class="btn-icon">🚀</span> Keluarkan <span id="dispenseGramsLabel">25</span> Gram Pakan
             </button>
 
+            <!-- Box Indikator Jeda Pakan 5 Jam -->
+            <div class="feed-cooldown-box" id="feedCooldownBox" style="display: none;">
+              <div class="cooldown-header">
+                <span class="cooldown-icon">⏳</span>
+                <strong>Jeda Pakan 5 Jam Sedang Aktif</strong>
+              </div>
+              <p class="cooldown-desc">
+                Pakan terakhir diberikan pada pukul <b id="cooldownLastTime">--:--</b>. Tombol pakan dikunci selama 5 jam untuk mencegah overfeeding dan menjaga kualitas air.
+              </p>
+              <div class="cooldown-badge">
+                Sisa Waktu Jeda: <strong id="cooldownTimerBadge">05j 00m 00d</strong>
+              </div>
+              <div class="cooldown-actions">
+                <button type="button" class="btn-link-subtle" id="btnResetCooldown" title="Reset jeda 5 jam untuk keperluan pengujian / demo">
+                  ↺ Reset Jeda (Khusus Uji Coba)
+                </button>
+              </div>
+            </div>
+
             <!-- Status animasi saat mengeluarkan pakan -->
             <div class="feed-action-progress" id="feedActionProgress" style="display: none;">
               <div class="spinner"></div>

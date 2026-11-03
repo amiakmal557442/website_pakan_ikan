@@ -36,6 +36,9 @@ const DEFAULT_STATE = {
   firebaseApiUrl: 'backend-php/api.php',
   fbRefreshInterval: 3,
 
+  // Jeda Pakan Manual (Cooldown 5 Jam)
+  lastManualFeedTimestamp: 0,
+
   // Kapasitas Tabung Pakan
   storageCapacity: 1000, // gram
   storageRemaining: 850, // gram
@@ -133,6 +136,10 @@ const btnDispenseFeed = document.getElementById('btnDispenseFeed');
 const dispenseGramsLabel = document.getElementById('dispenseGramsLabel');
 const feedActionProgress = document.getElementById('feedActionProgress');
 const feedActionStatusText = document.getElementById('feedActionStatusText');
+const feedCooldownBox = document.getElementById('feedCooldownBox');
+const cooldownLastTime = document.getElementById('cooldownLastTime');
+const cooldownTimerBadge = document.getElementById('cooldownTimerBadge');
+const btnResetCooldown = document.getElementById('btnResetCooldown');
 
 // Kalkulator
 const calcFishCount = document.getElementById('calcFishCount');
@@ -274,6 +281,9 @@ function initDateTime() {
 
     // Cek jadwal pakan per menit
     checkScheduledFeed(now);
+
+    // Perbarui countdown jeda pakan manual 5 jam secara real-time
+    updateFeedButtonCooldownUI();
   };
 
   updateClock();
@@ -291,6 +301,7 @@ function renderAllState() {
   renderWaterReadingsList();
   updateNextScheduleBadge();
   updateConnectionBadge();
+  updateFeedButtonCooldownUI();
 }
 
 /**
@@ -407,13 +418,95 @@ function renderFeedMetrics() {
 }
 
 // ========================================================
-// 7. LOGIKA PEMBERIAN PAKAN (DISPENSER)
+// 7. LOGIKA PEMBERIAN PAKAN (DISPENSER) & JEDA 5 JAM
 // ========================================================
+
+// Durasi jeda tombol pakan manual: 5 Jam (5 * 60 * 60 * 1000 ms)
+const FEED_COOLDOWN_HOURS = 5;
+const FEED_COOLDOWN_MS = FEED_COOLDOWN_HOURS * 60 * 60 * 1000;
+
+/**
+ * Menghitung sisa waktu jeda pakan manual dalam milidetik
+ */
+function getFeedCooldownRemaining() {
+  const lastTime = Number(appState.lastManualFeedTimestamp) || 0;
+  if (!lastTime) return 0;
+  const elapsed = Date.now() - lastTime;
+  const remaining = FEED_COOLDOWN_MS - elapsed;
+  return remaining > 0 ? remaining : 0;
+}
+
+/**
+ * Cek apakah tombol pakan manual sedang dalam masa jeda 5 jam
+ */
+function isFeedOnCooldown() {
+  return getFeedCooldownRemaining() > 0;
+}
+
+/**
+ * Format milidetik ke string jam, menit, detik (contoh: "04j 58m 20d")
+ */
+function formatCooldownTimer(ms) {
+  if (ms <= 0) return '00j 00m 00d';
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(hours)}j ${pad(minutes)}m ${pad(seconds)}d`;
+}
+
+/**
+ * Memperbarui tampilan tombol dan notifikasi jeda pakan manual secara real-time
+ */
+function updateFeedButtonCooldownUI() {
+  if (!btnDispenseFeed) return;
+
+  // Jangan ubah tombol jika sedang dalam proses penuangan servo aktif
+  if (feedActionProgress && feedActionProgress.style.display === 'flex') {
+    return;
+  }
+
+  const remaining = getFeedCooldownRemaining();
+  const onCooldown = remaining > 0;
+
+  if (onCooldown) {
+    btnDispenseFeed.disabled = true;
+    btnDispenseFeed.classList.add('btn-cooldown');
+    btnDispenseFeed.innerHTML = `<span class="btn-icon">⏳</span> Jeda Pakan: ${formatCooldownTimer(remaining)}`;
+
+    if (feedCooldownBox) {
+      feedCooldownBox.style.display = 'block';
+    }
+    if (cooldownTimerBadge) {
+      cooldownTimerBadge.textContent = formatCooldownTimer(remaining);
+    }
+    if (cooldownLastTime && appState.lastManualFeedTimestamp) {
+      const feedDate = new Date(appState.lastManualFeedTimestamp);
+      cooldownLastTime.textContent = feedDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+  } else {
+    btnDispenseFeed.disabled = false;
+    btnDispenseFeed.classList.remove('btn-cooldown');
+    btnDispenseFeed.innerHTML = `<span class="btn-icon">🚀</span> Keluarkan <span id="dispenseGramsLabel">${selectedFeedGrams}</span> Gram Pakan`;
+
+    if (feedCooldownBox) {
+      feedCooldownBox.style.display = 'none';
+    }
+  }
+}
 
 /**
  * Eksekusi pengeluaran pakan (manual maupun dari jadwal)
  */
 async function dispenseFeed(grams, source = 'Manual') {
+  // Jika dipicu manual dan masih dalam periode jeda 5 jam, tolak
+  if (source === 'Manual' && isFeedOnCooldown()) {
+    const rem = getFeedCooldownRemaining();
+    alert(`Pakan manual masih dalam masa jeda!\nSisa waktu: ${formatCooldownTimer(rem)}.\nJeda 5 jam diterapkan demi menjaga kesehatan ikan & kualitas air kolam.`);
+    return false;
+  }
+
   if (appState.storageRemaining < grams) {
     alert(`Pakan di tabung tidak mencukupi! Sisa hanya ${appState.storageRemaining} gram, sedangkan permintaan ${grams} gram. Harap isi ulang tabung pakan.`);
     return false;
@@ -513,19 +606,24 @@ async function dispenseFeed(grams, source = 'Manual') {
     appState.feedToday += grams;
     appState.feedCountToday += 1;
 
+    // Catat waktu pakan manual untuk mengaktifkan jeda 5 jam
+    if (source === 'Manual') {
+      appState.lastManualFeedTimestamp = Date.now();
+    }
+
     saveState();
     renderFeedMetrics();
 
     feedActionStatusText.textContent = `Berhasil! ${grams} gram pakan telah dituangkan.`;
     setTimeout(() => {
       feedActionProgress.style.display = 'none';
-      btnDispenseFeed.disabled = false;
+      updateFeedButtonCooldownUI();
     }, 2000);
 
     return true;
   } else {
     feedActionProgress.style.display = 'none';
-    btnDispenseFeed.disabled = false;
+    updateFeedButtonCooldownUI();
     return false;
   }
 }
@@ -967,7 +1065,10 @@ function initEventListeners() {
       btn.classList.add('active');
       selectedFeedGrams = parseInt(btn.dataset.grams);
       customGramInput.value = selectedFeedGrams;
-      dispenseGramsLabel.textContent = selectedFeedGrams;
+      const label = document.getElementById('dispenseGramsLabel');
+      if (label && !isFeedOnCooldown()) {
+        label.textContent = selectedFeedGrams;
+      }
     });
   });
 
@@ -976,7 +1077,10 @@ function initEventListeners() {
     let val = parseInt(e.target.value);
     if (!isNaN(val) && val > 0) {
       selectedFeedGrams = val;
-      dispenseGramsLabel.textContent = val;
+      const label = document.getElementById('dispenseGramsLabel');
+      if (label && !isFeedOnCooldown()) {
+        label.textContent = val;
+      }
       // Lepas active di preset jika tidak pas
       feedPresetBtns.forEach(b => {
         if (parseInt(b.dataset.grams) === val) {
@@ -988,10 +1092,26 @@ function initEventListeners() {
     }
   });
 
-  // Tombol Keluarkan Pakan
+  // Tombol Keluarkan Pakan Manual
   btnDispenseFeed.addEventListener('click', () => {
+    if (isFeedOnCooldown()) {
+      const rem = getFeedCooldownRemaining();
+      alert(`Pakan manual sedang dalam periode jeda 5 jam!\nSisa waktu: ${formatCooldownTimer(rem)}.\nHarap tunggu jeda selesai demi kesehatan ikan dan stabilitas air kolam.`);
+      return;
+    }
     dispenseFeed(selectedFeedGrams, 'Manual');
   });
+
+  // Tombol Reset Jeda Pakan (Khusus Uji Coba / Demo)
+  if (btnResetCooldown) {
+    btnResetCooldown.addEventListener('click', () => {
+      if (confirm('Apakah Anda ingin mereset jeda pakan 5 jam untuk keperluan pengujian / demo?')) {
+        appState.lastManualFeedTimestamp = 0;
+        saveState();
+        updateFeedButtonCooldownUI();
+      }
+    });
+  }
 
   // Tombol Isi Ulang Tabung Pakan
   btnRefill.addEventListener('click', () => {

@@ -61,7 +61,7 @@ const char *FIREBASE_ROOT_CA = "";
 // ==============================================================================
 constexpr float CALIBRATION_FACTOR = 420.0f; // Kalibrasi untuk load cell (ubah sesuai beban kalibrasi)
 constexpr float STOCK_MIN_GRAMS    = 5.0f;   // Batas minimum stok pakan di tabung
-constexpr uint32_t FEED_INTERVAL_MS = 12UL * 60UL * 60UL * 1000UL; // Interval pakan otomatis (12 jam)
+constexpr uint32_t FEED_INTERVAL_MS = 5UL * 60UL * 60UL * 1000UL; // Interval jeda pakan (5 jam)
 constexpr uint32_t SERVO_OPEN_MS   = 900;    // Durasi corong servo terbuka (ms)
 constexpr int SERVO_CLOSED_DEG     = 10;     // Sudut servo tertutup rapat
 constexpr int SERVO_OPEN_DEG       = 80;     // Sudut servo terbuka menuang pakan
@@ -158,11 +158,19 @@ void sampleSensors() {
 }
 
 // ==============================================================================
-// 6. KONTROL MOTOR SERVO DISPENSER PAKAN
+// 6. KONTROL MOTOR SERVO DISPENSER PAKAN (DENGAN JEDA 5 JAM)
 // ==============================================================================
-void triggerFeederAction(uint32_t now, const char* reason) {
+void triggerFeederAction(uint32_t now, const char* reason, bool bypassCooldown = false) {
   if (stockGrams < STOCK_MIN_GRAMS) {
     Serial.println("[Feeder] Dibatalkan: Stok pakan di tabung habis/kritis!");
+    return;
+  }
+
+  // Pengaman hardware: pastikan ada jeda minimal 5 jam antar pemberian pakan
+  if (!bypassCooldown && lastFeedAt > 0 && (now - lastFeedAt < FEED_INTERVAL_MS)) {
+    uint32_t remainingMs = FEED_INTERVAL_MS - (now - lastFeedAt);
+    uint32_t remMin = remainingMs / 60000UL;
+    Serial.printf("[Feeder] Ditolak: Jeda 5 jam masih berlangsung (%lu menit tersisa). Menghindari overfeeding.\n", remMin);
     return;
   }
 

@@ -95,11 +95,35 @@ try {
         case 'feed':
             $grams  = isset($inputData['grams']) ? intval($inputData['grams']) : 25;
             $source = isset($inputData['source']) ? $inputData['source'] : 'Manual';
+            $bypass = !empty($inputData['bypass_cooldown']);
 
             if ($grams <= 0) {
                 http_response_code(400);
                 echo json_encode(['success' => false, 'message' => 'Jumlah gram pakan harus lebih dari 0!']);
                 exit();
+            }
+
+            // Validasi jeda pakan 5 jam untuk pemberian pakan Manual
+            $controlRes = $firebase->get(NODE_POND_CONTROL);
+            if ($source === 'Manual' && !$bypass && $controlRes['success'] && !empty($controlRes['data']['last_manual_timestamp'])) {
+                $lastManual = intval($controlRes['data']['last_manual_timestamp']);
+                $cooldownMs = 5 * 3600 * 1000; // 5 Jam
+                $currentMs  = round(microtime(true) * 1000);
+                $elapsedMs  = $currentMs - $lastManual;
+
+                if ($elapsedMs < $cooldownMs) {
+                    $remainingSec = round(($cooldownMs - $elapsedMs) / 1000);
+                    $remHours = floor($remainingSec / 3600);
+                    $remMins  = floor(($remainingSec % 3600) / 60);
+                    http_response_code(429);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => "Jeda pakan 5 jam masih aktif! Tersisa {$remHours} jam {$remMins} menit untuk pakan manual.",
+                        'cooldown_active' => true,
+                        'remaining_seconds' => $remainingSec
+                    ]);
+                    exit();
+                }
             }
 
             // Ambil sisa pakan & hari ini saat ini dari Firebase
@@ -122,6 +146,7 @@ try {
             $newFeedToday = $feedToday + $grams;
             $currentTime  = date('H:i:s');
             $currentDate  = date('Y-m-d H:i:s');
+            $nowMs        = round(microtime(true) * 1000);
 
             // 1. Tulis trigger ke node control agar Arduino ESP32 memutar motor servo
             $controlData = [
@@ -129,7 +154,8 @@ try {
                 'dispense_gram' => $grams,
                 'source'        => $source,
                 'requested_at'  => $currentDate,
-                'last_feed_time'=> $currentTime
+                'last_feed_time'=> $currentTime,
+                'last_manual_timestamp' => ($source === 'Manual') ? $nowMs : ($controlRes['data']['last_manual_timestamp'] ?? 0)
             ];
             $firebase->set(NODE_POND_CONTROL, $controlData);
 

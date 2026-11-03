@@ -88,6 +88,28 @@ class PondController extends Controller
 
         $grams  = (int)$request->input('grams', 25);
         $source = $request->input('source', 'Manual');
+        $bypass = (bool)$request->input('bypass_cooldown', false);
+
+        // Validasi jeda pakan 5 jam untuk manual
+        $control = $this->firebase->get($this->firebase->getNode('control')) ?? [];
+        if ($source === 'Manual' && !$bypass && !empty($control['last_manual_timestamp'])) {
+            $lastManual = (int)$control['last_manual_timestamp'];
+            $cooldownMs = 5 * 3600 * 1000;
+            $currentMs  = (int)round(microtime(true) * 1000);
+            $elapsedMs  = $currentMs - $lastManual;
+
+            if ($elapsedMs < $cooldownMs) {
+                $remSec = (int)round(($cooldownMs - $elapsedMs) / 1000);
+                $remHours = floor($remSec / 3600);
+                $remMins  = floor(($remSec % 3600) / 60);
+                return response()->json([
+                    'success' => false,
+                    'message' => "Jeda pakan 5 jam masih aktif! Tersisa {$remHours} jam {$remMins} menit untuk pakan manual.",
+                    'cooldown_active' => true,
+                    'remaining_seconds' => $remSec
+                ], 429);
+            }
+        }
 
         $sensors = $this->firebase->get($this->firebase->getNode('sensors')) ?? [];
         $sisaPakan = isset($sensors['sisa_pakan']) ? (int)$sensors['sisa_pakan'] : 850;
@@ -111,7 +133,8 @@ class PondController extends Controller
             'dispense_gram' => $grams,
             'source'        => $source,
             'requested_at'  => $currentDate,
-            'last_feed_time'=> $currentTime
+            'last_feed_time'=> $currentTime,
+            'last_manual_timestamp' => ($source === 'Manual') ? (int)round(microtime(true) * 1000) : ($control['last_manual_timestamp'] ?? 0)
         ]);
 
         // 2. Perbarui sisa pakan di Firebase
