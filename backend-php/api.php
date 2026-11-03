@@ -60,7 +60,9 @@ try {
             $schedules = ($schedRes['success'] && is_array($schedRes['data'])) ? $schedRes['data'] : [];
 
             // Nilai fleksibel membaca format ESP32 suhu/temperatureC, sisa_pakan/stockGrams, kekeruhan/turbidityAdc
-            $suhuVal      = isset($sensors['suhu']) ? floatval($sensors['suhu']) : (isset($sensors['temperatureC']) ? floatval($sensors['temperatureC']) : 28.5);
+            $suhuVal = (isset($sensors['suhu']) && $sensors['suhu'] !== null) 
+                ? floatval($sensors['suhu']) 
+                : ((isset($sensors['temperatureC']) && $sensors['temperatureC'] !== null) ? floatval($sensors['temperatureC']) : null);
             $kekeruhanVal = isset($sensors['kekeruhan']) ? intval($sensors['kekeruhan']) : (isset($sensors['turbidityAdc']) ? intval($sensors['turbidityAdc']) : 18);
             $sisaPakanVal = isset($sensors['sisa_pakan']) ? floatval($sensors['sisa_pakan']) : (isset($sensors['stockGrams']) ? floatval($sensors['stockGrams']) : 850);
             $sugenoVal    = isset($sensors['sugenoScore']) ? floatval($sensors['sugenoScore']) : null;

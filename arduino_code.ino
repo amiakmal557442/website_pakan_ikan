@@ -75,6 +75,7 @@ WebServer localServer(80); // Fallback Web Server lokal
 
 // Variabel Status Telemetri
 float waterC        = NAN;
+bool  tempSensorOk  = false;
 float turbidityAdc  = NAN;
 float turbidityNtu  = NAN;
 float stockGrams    = NAN;
@@ -128,8 +129,15 @@ void sampleSensors() {
   // 1. Suhu Air (DS18B20)
   tempSensor.requestTemperatures();
   const float t = tempSensor.getTempCByIndex(0);
-  if (t != DEVICE_DISCONNECTED_C && t > -55.0f && t < 125.0f) {
+
+  // Nilai -127.0f = DEVICE_DISCONNECTED_C (sensor putus / resistor pull-up 4.7k tidak ada)
+  // Nilai 85.0f   = Power-on reset value dari IC Dallas
+  if (t != DEVICE_DISCONNECTED_C && t != 85.0f && t > -40.0f && t < 125.0f) {
     waterC = t;
+    tempSensorOk = true;
+  } else {
+    waterC = NAN;
+    tempSensorOk = false;
   }
 
   // 2. Kekeruhan Air (ADC1 & Estimasi NTU)
@@ -137,9 +145,17 @@ void sampleSensors() {
   if (adc >= 0 && adc <= 4095) {
     turbidityAdc = static_cast<float>(adc);
 
-    // Konversi perkiraan ADC ke NTU (0 - 100 NTU)
-    float voltage = (turbidityAdc / 4095.0f) * 3.3f;
-    float ntu = -1120.4f * (voltage * voltage) + 5742.3f * voltage - 4353.8f;
+    // Konversi ADC ke NTU (0 - 100 NTU) yang realistis untuk sensor kekeruhan analog di ESP32:
+    // Tegangan/ADC tinggi = Jernih (NTU rendah)
+    // Tegangan/ADC rendah = Keruh (NTU tinggi)
+    float ntu = 0.0f;
+    if (turbidityAdc >= 3200.0f) {
+      ntu = (3800.0f - turbidityAdc) / (3800.0f - 3200.0f) * 20.0f;
+    } else if (turbidityAdc >= 2000.0f) {
+      ntu = 20.0f + (3200.0f - turbidityAdc) / (3200.0f - 2000.0f) * 30.0f;
+    } else {
+      ntu = 50.0f + (2000.0f - turbidityAdc) / (2000.0f - 800.0f) * 50.0f;
+    }
     turbidityNtu = max(0.0f, min(100.0f, ntu));
   }
 
@@ -152,8 +168,10 @@ void sampleSensors() {
   }
 
   // 4. Hitung Skor Fuzzy Sugeno
-  if (isfinite(waterC) && isfinite(turbidityAdc)) {
-    sugenoScore = sugenoSuitability(waterC, turbidityAdc);
+  // Jika sensor suhu fisik belum terpasang (NAN), gunakan nilai nominal 28.0C agar perhitungan kelayakan pakan tetap jalan
+  float tempForFuzzy = isfinite(waterC) ? waterC : 28.0f;
+  if (isfinite(turbidityAdc)) {
+    sugenoScore = sugenoSuitability(tempForFuzzy, turbidityAdc);
   }
 }
 
@@ -193,7 +211,7 @@ void updateFeeder(uint32_t now) {
   }
 
   // Pakan Otomatis berdasarkan Siklus Waktu & Skor Fuzzy Sugeno
-  if (!isfinite(waterC) || !isfinite(turbidityAdc) || !isfinite(stockGrams)) return;
+  if (!isfinite(turbidityAdc) || !isfinite(stockGrams)) return;
 
   const bool firstCycle = (lastFeedAt == 0);
   if (!firstCycle && (now - lastFeedAt < FEED_INTERVAL_MS)) return;
@@ -207,7 +225,12 @@ void updateFeeder(uint32_t now) {
 // 7. FIREBASE REALTIME DATABASE: UPLOAD TELEMETRI SENSOR
 // ==============================================================================
 void uploadTelemetryToFirebase() {
-  if (WiFi.status() != WL_CONNECTED || FIREBASE_URL[0] == '\0' || !isfinite(waterC)) return;
+  if (WiFi.status() != WL_CONNECTED || FIREBASE_URL[0] == '\0') {
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("[Firebase] Gagal upload: WiFi ESP32 belum terhubung!");
+    }
+    return;
+  }
 
   WiFiClientSecure client;
   if (FIREBASE_ROOT_CA != nullptr && strlen(FIREBASE_ROOT_CA) > 0) {
@@ -225,22 +248,32 @@ void uploadTelemetryToFirebase() {
   if (http.begin(client, url)) {
     http.addHeader("Content-Type", "application/json");
 
-    // Format JSON lengkap yang sinkron dengan Web Dashboard & PHP/Laravel
+    // Format JSON lengkap yang sinkron dengan Web Dashboard
     String body = "{";
-    body += "\"suhu\":" + String(waterC, 2) + ",";
-    body += "\"temperatureC\":" + String(waterC, 2) + ",";
+    if (isfinite(waterC)) {
+      body += "\"suhu\":" + String(waterC, 2) + ",";
+      body += "\"temperatureC\":" + String(waterC, 2) + ",";
+      body += "\"sensor_suhu_ok\":true,";
+    } else {
+      body += "\"suhu\":null,";
+      body += "\"temperatureC\":null,";
+      body += "\"sensor_suhu_ok\":false,";
+    }
     body += "\"kekeruhan\":" + String((int)turbidityNtu) + ",";
     body += "\"turbidityAdc\":" + String(turbidityAdc, 0) + ",";
-    body += "\"sisa_pakan\":" + String(stockGrams, 1) + ",";
-    body += "\"stockGrams\":" + String(stockGrams, 1) + ",";
+    body += "\"sisa_pakan\":" + String(isfinite(stockGrams) ? stockGrams : 850.0f, 1) + ",";
+    body += "\"stockGrams\":" + String(isfinite(stockGrams) ? stockGrams : 850.0f, 1) + ",";
     body += "\"feedActive\":" + String(feeding ? "true" : "false") + ",";
     body += "\"sugenoScore\":" + String(sugenoScore, 3) + ",";
-    body += "\"updated_at\":\"ESP32 Online\"";
+    body += "\"uptime_sec\":" + String(millis() / 1000UL) + ",";
+    body += "\"updated_at\":\"ESP32 Live (" + String(millis() / 1000UL) + "s)\"";
     body += "}";
 
     int httpCode = http.PATCH(body);
     if (httpCode > 0) {
-      Serial.printf("[Firebase] Telemetri berhasil diupload. HTTP Code: %d\n", httpCode);
+      Serial.printf("[Firebase] Telemetri terkirim! (HTTP %d | Suhu: %s | Keruh: %.0f ADC / %d NTU)\n",
+        httpCode, isfinite(waterC) ? (String(waterC, 2) + " C").c_str() : "DISCONNECTED (null)",
+        turbidityAdc, (int)turbidityNtu);
     } else {
       Serial.printf("[Firebase] Gagal upload: %s\n", http.errorToString(httpCode).c_str());
     }
@@ -295,12 +328,19 @@ void checkFirebaseFeedTrigger() {
 // ==============================================================================
 void handleLocalGetData() {
   String json = "{";
-  json += "\"suhu\":" + String(waterC, 2) + ",";
-  json += "\"temperatureC\":" + String(waterC, 2) + ",";
+  if (isfinite(waterC)) {
+    json += "\"suhu\":" + String(waterC, 2) + ",";
+    json += "\"temperatureC\":" + String(waterC, 2) + ",";
+    json += "\"sensor_suhu_ok\":true,";
+  } else {
+    json += "\"suhu\":null,";
+    json += "\"temperatureC\":null,";
+    json += "\"sensor_suhu_ok\":false,";
+  }
   json += "\"kekeruhan\":" + String((int)turbidityNtu) + ",";
   json += "\"turbidityAdc\":" + String(turbidityAdc, 0) + ",";
-  json += "\"sisa_pakan\":" + String(stockGrams, 1) + ",";
-  json += "\"stockGrams\":" + String(stockGrams, 1) + ",";
+  json += "\"sisa_pakan\":" + String(isfinite(stockGrams) ? stockGrams : 850.0f, 1) + ",";
+  json += "\"stockGrams\":" + String(isfinite(stockGrams) ? stockGrams : 850.0f, 1) + ",";
   json += "\"sugenoScore\":" + String(sugenoScore, 3) + ",";
   json += "\"feedActive\":" + String(feeding ? "true" : "false");
   json += "}";
@@ -327,23 +367,46 @@ void setup() {
 
   analogReadResolution(12);
 
-  // Inisialisasi Sensor Suhu
+  // 1. Inisialisasi Sensor Suhu DS18B20 dengan pullup internal & scanning bus
+  pinMode(PIN_ONEWIRE, INPUT_PULLUP);
   tempSensor.begin();
+  tempSensor.setWaitForConversion(true);
 
-  // Inisialisasi Timbangan Pakan HX711
+  uint8_t count = tempSensor.getDeviceCount();
+  Serial.printf("[DS18B20] Mencari sensor pada GPIO %d... Ditemukan: %d sensor.\n", PIN_ONEWIRE, count);
+
+  DeviceAddress devAddr;
+  if (count > 0 && tempSensor.getAddress(devAddr, 0)) {
+    tempSensor.setResolution(devAddr, 10); // 10-bit resolution (0.25 C)
+    tempSensorOk = true;
+    Serial.print("[DS18B20] Sensor terdeteksi OK. Alamat ROM: ");
+    for (uint8_t i = 0; i < 8; i++) Serial.printf("%02X", devAddr[i]);
+    Serial.println();
+  } else {
+    tempSensorOk = false;
+    Serial.println("-------------------------------------------------------");
+    Serial.println("⚠️  PERINGATAN: SENSOR SUHU DS18B20 TIDAK TERDETEKSI!");
+    Serial.println("  Penyebab & Solusi Hardware:");
+    Serial.println("  1. Pastikan kabel Data (Kuning/Biru) masuk ke GPIO 4.");
+    Serial.println("  2. WAJIB: Pasang Resistor 4.7k ohm antara kabel DATA (GPIO 4) dan 3.3V.");
+    Serial.println("  3. Kabel Merah (VCC) ke 3.3V, kabel Hitam (GND) ke GND.");
+    Serial.println("-------------------------------------------------------");
+  }
+
+  // 2. Inisialisasi Timbangan Pakan HX711
   scale.begin(PIN_HX_DOUT, PIN_HX_SCK);
   scale.set_scale(CALIBRATION_FACTOR);
   if (scale.is_ready()) {
     scale.tare();
-    Serial.println("HX711 Tare berhasil.");
+    Serial.println("[HX711] Tare timbangan berhasil (0.0 gram).");
   }
 
-  // Inisialisasi Motor Servo Pakan
+  // 3. Inisialisasi Motor Servo Pakan
   feeder.setPeriodHertz(50);
   feeder.attach(PIN_SERVO, 500, 2400);
   feeder.write(SERVO_CLOSED_DEG);
 
-  // Koneksi WiFi
+  // 4. Koneksi WiFi
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.printf("Menghubungkan ke Wi-Fi: %s", WIFI_SSID);
@@ -363,7 +426,7 @@ void setup() {
     Serial.println("\nWiFi belum terhubung. Melanjutkan dalam mode offline.");
   }
 
-  // Daftarkan route HTTP server lokal
+  // 5. Daftarkan route HTTP server lokal
   localServer.on("/data", HTTP_GET, handleLocalGetData);
   localServer.on("/feed", HTTP_GET, handleLocalFeed);
   localServer.begin();
@@ -382,19 +445,25 @@ void loop() {
     sampleSensors();
     updateFeeder(now);
 
-    Serial.printf("Suhu=%.2f C | Keruh ADC=%.0f (~%d NTU) | Pakan=%.1f g | Sugeno=%.2f | Servo=%s\n",
-      waterC, turbidityAdc, (int)turbidityNtu, stockGrams, sugenoScore,
-      feeding ? "TERBUKA" : "TERTUTUP");
+    if (isfinite(waterC)) {
+      Serial.printf("[Sensor] Suhu=%.2f C | Keruh=%.0f ADC (~%d NTU) | Pakan=%.1f g | Sugeno=%.2f | Servo=%s\n",
+        waterC, turbidityAdc, (int)turbidityNtu, stockGrams, sugenoScore,
+        feeding ? "TERBUKA" : "TERTUTUP");
+    } else {
+      Serial.printf("[Sensor] Suhu=[TIDAK TERDETEKSI / -127C] | Keruh=%.0f ADC (~%d NTU) | Pakan=%.1f g | Sugeno=%.2f | Servo=%s\n",
+        turbidityAdc, (int)turbidityNtu, stockGrams, sugenoScore,
+        feeding ? "TERBUKA" : "TERTUTUP");
+    }
   }
 
-  // 2. Cek perintah trigger pakan dari Web Dashboard setiap 3 detik
-  if (now - lastCheckTriggerAt >= 3000UL) {
+  // 2. Cek perintah trigger pakan dari Web Dashboard setiap 2 detik
+  if (now - lastCheckTriggerAt >= 2000UL) {
     lastCheckTriggerAt = now;
     checkFirebaseFeedTrigger();
   }
 
-  // 3. Upload data sensor ke Firebase setiap 10 detik
-  if (now - lastUploadAt >= 10000UL) {
+  // 3. Upload data sensor ke Firebase setiap 4 detik (cepat sinkron ke website)
+  if (now - lastUploadAt >= 4000UL) {
     lastUploadAt = now;
     uploadTelemetryToFirebase();
   }

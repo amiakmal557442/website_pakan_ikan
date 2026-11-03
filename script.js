@@ -308,7 +308,17 @@ function renderAllState() {
  * Menghitung & Memperbarui status Suhu Air
  */
 function updateTemperature(val) {
-  appState.currentTemp = parseFloat(val.toFixed(1));
+  if (val === null || val === undefined || isNaN(val) || val <= -50 || val >= 120) {
+    appState.currentTemp = null;
+    tempValueEl.textContent = '--';
+    tempStatusEl.className = 'status-pill status-alert';
+    tempStatusEl.textContent = 'Sensor Tidak Terdeteksi';
+    tempBarEl.style.width = '0%';
+    tempBarEl.style.backgroundColor = '#dc2626';
+    return;
+  }
+
+  appState.currentTemp = parseFloat(Number(val).toFixed(1));
   tempValueEl.textContent = appState.currentTemp.toFixed(1);
 
   // Status Suhu:
@@ -754,6 +764,18 @@ function checkScheduledFeed(nowDate) {
  * Menentukan status kondisi air dan keterangan teks
  */
 function getWaterCondition(temp, turb) {
+  // Jika sensor suhu tidak terdeteksi (-127C / lepas)
+  if (temp === null || temp === undefined || isNaN(temp)) {
+    return {
+      title: 'Peringatan: Sensor Suhu Belum Terdeteksi',
+      badge: 'Sensor Suhu Terputus',
+      dotClass: 'alert',
+      pillClass: 'status-alert',
+      statusLabel: 'Suhu Error',
+      desc: `Sensor DS18B20 tidak terdeteksi pada ESP32 (Kekeruhan: ${turb} NTU). Periksa kabel pin GPIO 4 dan resistor pull-up 4.7k ohm.`
+    };
+  }
+
   if (turb > 50 || temp > 32 || temp < 23) {
     return {
       title: 'Peringatan: Kondisi Air Kolam Kritis!',
@@ -800,10 +822,14 @@ function renderWaterTextSummary() {
   if (waterStatusSummaryDesc) waterStatusSummaryDesc.textContent = cond.desc;
 
   if (waterTempSummaryText) {
-    let tempNote = 'Normal & Sesuai Standar (26 - 30 °C)';
-    if (temp < 25) tempNote = 'Cenderung Dingin (< 25 °C)';
-    else if (temp > 30.5) tempNote = 'Hangat / Panas (> 30.5 °C)';
-    waterTempSummaryText.innerHTML = `<strong>${temp.toFixed(1)} °C</strong> — ${tempNote}`;
+    if (temp === null || isNaN(temp)) {
+      waterTempSummaryText.innerHTML = `<strong>Tidak Terdeteksi (-- °C)</strong> — <span style="color:#dc2626;">Cek GPIO 4 & Resistor 4.7kΩ</span>`;
+    } else {
+      let tempNote = 'Normal & Sesuai Standar (26 - 30 °C)';
+      if (temp < 25) tempNote = 'Cenderung Dingin (< 25 °C)';
+      else if (temp > 30.5) tempNote = 'Hangat / Panas (> 30.5 °C)';
+      waterTempSummaryText.innerHTML = `<strong>${temp.toFixed(1)} °C</strong> — ${tempNote}`;
+    }
   }
 
   if (waterTurbSummaryText) {
@@ -829,13 +855,14 @@ function renderWaterReadingsList() {
   appState.waterReadings.forEach(item => {
     const row = document.createElement('div');
     row.className = 'reading-text-row';
+    const tempDisplay = (item.temp !== null && item.temp !== '--' && !isNaN(item.temp)) ? `${item.temp}°C` : '--';
     row.innerHTML = `
       <div class="reading-time-col">
         <span class="reading-clock">🕒 ${item.time}</span>
       </div>
       <div class="reading-info-col">
         <div class="reading-data">
-          <span>Suhu: <strong>${item.temp}°C</strong></span>
+          <span>Suhu: <strong>${tempDisplay}</strong></span>
           <span class="separator">•</span>
           <span>Kekeruhan: <strong>${item.turb} NTU</strong></span>
         </div>
@@ -859,7 +886,7 @@ function addWaterReading(temp, turb, timeStr) {
 
   appState.waterReadings.unshift({
     time: timeLabel,
-    temp: parseFloat(temp.toFixed(1)),
+    temp: (temp !== null && !isNaN(temp)) ? parseFloat(temp.toFixed(1)) : '--',
     turb: Math.round(turb),
     statusText: cond.statusLabel,
     statusClass: cond.pillClass
@@ -922,13 +949,20 @@ function startSensorMonitoring() {
             if (directRes.ok) {
               const rawData = await directRes.json();
               if (rawData && typeof rawData === 'object') {
+                const parseSuhu = (val) => {
+                  if (val === null || val === undefined || isNaN(val) || Number(val) <= -50 || Number(val) >= 120) return null;
+                  return Number(val);
+                };
+
                 data = {
-                  suhu: rawData.suhu ?? rawData.temperatureC ?? 28.5,
-                  kekeruhan: rawData.kekeruhan ?? rawData.turbidityAdc ?? 18,
-                  sisa_pakan: rawData.sisa_pakan ?? rawData.stockGrams ?? 850,
+                  suhu: parseSuhu(rawData.suhu !== undefined ? rawData.suhu : rawData.temperatureC),
+                  kekeruhan: (rawData.kekeruhan !== undefined && rawData.kekeruhan !== null) ? Number(rawData.kekeruhan) : 18,
+                  turbidityAdc: rawData.turbidityAdc !== undefined ? Number(rawData.turbidityAdc) : null,
+                  sisa_pakan: (rawData.sisa_pakan !== undefined && rawData.sisa_pakan !== null) ? Number(rawData.sisa_pakan) : (rawData.stockGrams !== undefined ? Number(rawData.stockGrams) : 850),
                   feed_today: rawData.feed_today ?? 120,
                   feed_target: rawData.feed_target ?? 150,
-                  sugenoScore: rawData.sugenoScore ?? null
+                  sugenoScore: rawData.sugenoScore ?? null,
+                  updated_at: rawData.updated_at ?? null
                 };
                 isOk = true;
               }
@@ -939,7 +973,7 @@ function startSensorMonitoring() {
         }
 
         if (isOk && data) {
-          if (data.suhu !== undefined) updateTemperature(data.suhu);
+          updateTemperature(data.suhu);
           if (data.kekeruhan !== undefined) updateTurbidity(data.kekeruhan);
           if (data.sisa_pakan !== undefined) {
             appState.storageRemaining = data.sisa_pakan;
@@ -959,7 +993,7 @@ function startSensorMonitoring() {
           }
 
           renderFeedMetrics();
-          updateConnectionBadge(true);
+          updateConnectionBadge(true, data.updated_at);
           renderWaterTextSummary();
 
           const nowMs = Date.now();
@@ -1036,12 +1070,13 @@ function startSensorMonitoring() {
   dataFetchTimer = setInterval(fetchLoop, intervalSec);
 }
 
-function updateConnectionBadge(isOnline = true) {
+function updateConnectionBadge(isOnline = true, timeNote = null) {
   if (appState.mode === 'simulation') {
     connectionBadgeEl.innerHTML = `<span class="status-dot online"></span> <span>Mode Simulasi (Demo)</span>`;
   } else if (appState.mode === 'firebase') {
     if (isOnline) {
-      connectionBadgeEl.innerHTML = `<span class="status-dot online"></span> <span>Firebase Cloud (Aktif)</span>`;
+      const extra = timeNote ? ` (${timeNote})` : ' (Aktif)';
+      connectionBadgeEl.innerHTML = `<span class="status-dot online"></span> <span>Firebase Live${extra}</span>`;
     } else {
       connectionBadgeEl.innerHTML = `<span class="status-dot offline"></span> <span>Firebase Offline</span>`;
     }
