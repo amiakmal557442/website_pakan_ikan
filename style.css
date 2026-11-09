@@ -72,7 +72,7 @@ body {
   inset: 0;
   width: 100vw;
   height: 100vh;
-  background-color: #f5efe1; /* Warna krem senada kanvas video ikan */
+  background-color: #f1ebdf; /* Warna persis kanvas video animasi loading */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -107,6 +107,10 @@ body {
   z-index: 1;
   display: block;
   pointer-events: none;
+  background-color: #f1ebdf;
+  /* Masking halus di pinggiran video agar menyatu sempurna tanpa bentuk garis/kotak */
+  -webkit-mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0) 100%);
+  mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0) 100%);
   animation: introVideoFadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -123,12 +127,11 @@ body {
   }
 }
 
-/* Overlay Halus untuk Transisi & Kontras Teks yang Bersih */
+/* Overlay Halus untuk Transisi Teks yang Bersih di Bagian Bawah */
 .intro-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 36%, rgba(245, 239, 225, 0) 36%, rgba(245, 239, 225, 0.5) 72%, rgba(245, 239, 225, 0.95) 100%),
-              linear-gradient(to top, rgba(245, 239, 225, 0.95) 0%, rgba(245, 239, 225, 0) 32%);
+  background: linear-gradient(to top, rgba(241, 235, 223, 0.88) 0%, rgba(241, 235, 223, 0) 28%);
   z-index: 2;
   pointer-events: none;
 }
