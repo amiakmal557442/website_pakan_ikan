@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 
 <head>
@@ -75,6 +75,34 @@
           <span class="pill-label">Pakan Terjadwal Berikutnya:</span>
           <span class="pill-value" id="nextFeedScheduleBadge">Memuat...</span>
         </div>
+        <div class="quick-pill" id="quickPillFish" style="cursor: pointer;" title="Klik untuk mengelola tipe ikan">
+          <span class="pill-label">Tipe Ikan:</span>
+          <span class="pill-value" id="activeFishPillText">🐠 Ikan Koki</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Banner Seleksi & Kontrol Tipe Ikan -->
+    <section class="overview-banner fish-selector-banner">
+      <div class="fish-selector-main">
+        <div class="fish-selector-text">
+          <div class="fish-selector-badge">🏷️ Tipe Ikan Aktif</div>
+          <h3 id="currentFishHeading">🐠 Ikan Koki (Mas Koki)</h3>
+          <p id="currentFishDescription" class="fish-desc-text">
+            Suhu Ideal: <strong>20 - 24 °C</strong> | Kekeruhan Maks: <strong>&lt; 25%</strong> | Porsi Pakan: <strong>Pelet mudah cerna 25g, 2-3x sehari</strong>
+          </p>
+        </div>
+        <div class="fish-action-buttons">
+          <button type="button" class="btn btn-primary" id="btnOpenFishModal">
+            ✨ Kelola / Tambah Tipe Ikan
+          </button>
+        </div>
+      </div>
+      <div class="fish-quick-buttons-row">
+        <span class="fish-quick-label">Pilih Ikan:</span>
+        <div class="fish-pill-buttons" id="fishPillButtonsContainer">
+          <!-- Tombol Koki, Guppy, Ikan Mas di-render via JavaScript -->
+        </div>
       </div>
     </section>
 
@@ -118,9 +146,9 @@
             <div class="range-bar-fill" id="tempBar" style="width: 65%;"></div>
           </div>
           <div class="range-labels">
-            <span>Dingin (&lt;25°C)</span>
-            <span>Ideal (26-30°C)</span>
-            <span>Panas (&gt;31°C)</span>
+            <span id="tempLabelCold">Dingin (&lt;20°C)</span>
+            <span id="tempLabelIdeal">Ideal (20-24°C)</span>
+            <span id="tempLabelWarm">Panas (&gt;24°C)</span>
           </div>
         </div>
       </div>
@@ -649,6 +677,83 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" id="btnIotGuideToSettings">⚙️ Buka Pengaturan Alat</button>
         <button type="button" class="btn btn-primary" id="btnCloseIotGuideBottom">Saya Mengerti &amp; Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Kelola & Tambah Tipe Ikan -->
+  <div class="modal-backdrop" id="fishTypeModal" style="display: none;">
+    <div class="modal-dialog modal-dialog-lg">
+      <div class="modal-header">
+        <h3>🐟 Pilih &amp; Kelola Tipe Ikan</h3>
+        <button class="modal-close" id="btnCloseFishModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-text">
+          Pilih tipe ikan yang sedang Anda pelihara. Ambang batas parameter suhu ideal, toleransi kekeruhan, dan rekomendasi pakan akan otomatis disesuaikan secara real-time.
+        </p>
+
+        <!-- Daftar Tipe Ikan Tersedia (Koki, Guppy, Ikan Mas, dll) -->
+        <h4 class="iot-section-title">🏷️ Daftar Tipe Ikan Tersedia</h4>
+        <div class="fish-cards-grid" id="fishCardsList">
+          <!-- Di-render secara dinamis oleh JavaScript -->
+        </div>
+
+        <!-- Bagian Tambah Tipe Ikan Baru -->
+        <div class="add-fish-section">
+          <div class="add-fish-header">
+            <h4 class="iot-section-title" style="margin: 0; border-bottom: none;">➕ Tambah Tipe Ikan Baru</h4>
+            <button type="button" class="btn btn-sm btn-outline" id="btnToggleAddFishForm">+ Buka Form</button>
+          </div>
+
+          <div id="addFishFormBox" class="add-fish-form-box" style="display: none;">
+            <div class="form-group">
+              <label for="newFishName">Nama Ikan:</label>
+              <input type="text" id="newFishName" placeholder="Contoh: Ikan Cupang / Koi / Molly">
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="newFishTempMin">Suhu Minimal Ideal (°C):</label>
+                <input type="number" id="newFishTempMin" value="24" min="15" max="35">
+              </div>
+              <div class="form-group">
+                <label for="newFishTempMax">Suhu Maksimal Ideal (°C):</label>
+                <input type="number" id="newFishTempMax" value="28" min="15" max="35">
+              </div>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="newFishTurbMax">Batas Kekeruhan Maksimal (%):</label>
+                <input type="number" id="newFishTurbMax" value="30" min="5" max="90">
+              </div>
+              <div class="form-group">
+                <label for="newFishIcon">Pilihan Ikon Emoji:</label>
+                <select id="newFishIcon">
+                  <option value="🐟">🐟 Ikan Biru</option>
+                  <option value="🐠" selected>🐠 Ikan Hias Tropis</option>
+                  <option value="🎏">🎏 Ikan Mas / Koi</option>
+                  <option value="🐡">🐡 Ikan Buntal</option>
+                  <option value="🦐">🦐 Udang Hias</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="newFishFeedDesc">Karakteristik &amp; Porsi Pakan:</label>
+              <input type="text" id="newFishFeedDesc" placeholder="Contoh: Pelet mikro 1 mm, 2x sehari">
+            </div>
+            <div class="form-group">
+              <label for="newFishNotes">Catatan / Keterangan Ikan:</label>
+              <textarea id="newFishNotes" rows="2" placeholder="Keterangan singkat kebutuhan air atau habitat ikan..."></textarea>
+            </div>
+            <button type="button" class="btn btn-primary btn-block" id="btnSaveNewFish">
+              💾 Simpan Tipe Ikan Baru
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btnCloseFishModalBottom">Tutup</button>
       </div>
     </div>
   </div>

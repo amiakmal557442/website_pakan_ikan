@@ -60,6 +60,47 @@ const DEFAULT_STATE = {
     { id: 3, time: '17:00', grams: 25, enabled: true }
   ],
 
+  // Profil & Tipe Ikan yang Dipakai (Koki, Guppy, Ikan Mas)
+  selectedFishId: 'koki',
+  fishTypes: [
+    {
+      id: 'koki',
+      name: 'Ikan Koki',
+      fullName: 'Ikan Mas Koki',
+      latinName: 'Carassius auratus',
+      icon: '🐠',
+      tempMin: 20,
+      tempMax: 24,
+      turbidityMax: 25,
+      feedDesc: 'Pelet mudah cerna 25g, 2-3x sehari (lambat tenggelam)',
+      desc: 'Ikan mas koki bertubuh bulat dengan nafsu makan besar. Membutuhkan air sejuk, filtrasi bersih, dan aerasi kaya oksigen.'
+    },
+    {
+      id: 'guppy',
+      name: 'Ikan Guppy',
+      fullName: 'Ikan Guppy Hias',
+      latinName: 'Poecilia reticulata',
+      icon: '🐟',
+      tempMin: 24,
+      tempMax: 28,
+      turbidityMax: 30,
+      feedDesc: 'Pelet mikro / flake halus (5g-10g), 2x sehari',
+      desc: 'Ikan hias mungil yang berenang lincah di permukaan air. Menyukai air tropis bersuhu hangat stabil dan arus tenang.'
+    },
+    {
+      id: 'ikan-mas',
+      name: 'Ikan Mas',
+      fullName: 'Ikan Mas Biasa / Kolam',
+      latinName: 'Cyprinus carpio',
+      icon: '🎏',
+      tempMin: 25,
+      tempMax: 30,
+      turbidityMax: 40,
+      feedDesc: 'Pelet standar apung/tenggelam (25g-50g), 3x sehari',
+      desc: 'Ikan omnivora yang tangguh dan rakus di semua lapisan kolam. Mampu beradaptasi dengan variasi suhu dan kekeruhan air yang lebih luas.'
+    }
+  ],
+
   // Riwayat Pembacaan Sensor Air Berbasis Teks
   waterReadings: [
     { time: '17:00:00', temp: 28.5, turb: 18, statusText: 'Ideal & Normal', statusClass: 'status-safe' },
@@ -89,6 +130,13 @@ function loadState() {
         merged.schedules.forEach(s => {
           s.grams = Math.max(5, Math.round(parseFloat(s.grams) || 25));
         });
+      }
+      // Sanitasi data tipe ikan (Koki, Guppy, Ikan Mas)
+      if (!Array.isArray(merged.fishTypes) || merged.fishTypes.length === 0) {
+        merged.fishTypes = [...DEFAULT_STATE.fishTypes];
+      }
+      if (!merged.selectedFishId) {
+        merged.selectedFishId = DEFAULT_STATE.selectedFishId;
       }
       return merged;
     }
@@ -198,6 +246,31 @@ const btnCloseIotGuideBottom = document.getElementById('btnCloseIotGuideBottom')
 const btnIotGuideToSettings = document.getElementById('btnIotGuideToSettings');
 const btnCopyPinout = document.getElementById('btnCopyPinout');
 
+// Selektor & Modal Tipe Ikan
+const quickPillFish = document.getElementById('quickPillFish');
+const activeFishPillText = document.getElementById('activeFishPillText');
+const currentFishHeading = document.getElementById('currentFishHeading');
+const currentFishDescription = document.getElementById('currentFishDescription');
+const btnOpenFishModal = document.getElementById('btnOpenFishModal');
+const fishPillButtonsContainer = document.getElementById('fishPillButtonsContainer');
+const fishTypeModal = document.getElementById('fishTypeModal');
+const btnCloseFishModal = document.getElementById('btnCloseFishModal');
+const btnCloseFishModalBottom = document.getElementById('btnCloseFishModalBottom');
+const fishCardsList = document.getElementById('fishCardsList');
+const btnToggleAddFishForm = document.getElementById('btnToggleAddFishForm');
+const addFishFormBox = document.getElementById('addFishFormBox');
+const btnSaveNewFish = document.getElementById('btnSaveNewFish');
+const newFishName = document.getElementById('newFishName');
+const newFishTempMin = document.getElementById('newFishTempMin');
+const newFishTempMax = document.getElementById('newFishTempMax');
+const newFishTurbMax = document.getElementById('newFishTurbMax');
+const newFishIcon = document.getElementById('newFishIcon');
+const newFishFeedDesc = document.getElementById('newFishFeedDesc');
+const newFishNotes = document.getElementById('newFishNotes');
+const tempLabelCold = document.getElementById('tempLabelCold');
+const tempLabelIdeal = document.getElementById('tempLabelIdeal');
+const tempLabelWarm = document.getElementById('tempLabelWarm');
+
 let selectedFeedGrams = 25;
 let dataFetchTimer = null;
 let lastTriggeredScheduleMinute = '';
@@ -295,6 +368,7 @@ function initDateTime() {
 // 6. UPDATE TAMPILAN SENSOR & PARAMETER (UI)
 // ========================================================
 function renderAllState() {
+  renderFishUI();
   renderSensors();
   renderFeedMetrics();
   renderSchedules();
@@ -322,24 +396,30 @@ function updateTemperature(val) {
   appState.currentTemp = parseFloat(Number(val).toFixed(1));
   tempValueEl.textContent = appState.currentTemp.toFixed(1);
 
-  // Status Suhu:
-  // < 25: Dingin, 26 - 30: Ideal, > 30: Hangat/Panas
+  // Status Suhu disesuaikan dengan tipe ikan yang aktif
   const temp = appState.currentTemp;
-  let statusText = 'Normal (Ideal)';
-  let pillClass = 'status-safe';
-  let barPercent = Math.min(100, Math.max(10, ((temp - 20) / (35 - 20)) * 100));
+  const activeFish = getActiveFish();
+  const minT = activeFish.tempMin || 24;
+  const maxT = activeFish.tempMax || 28;
 
-  if (temp < 25) {
-    statusText = 'Air Terlalu Dingin';
+  let statusText = `Ideal (${activeFish.name})`;
+  let pillClass = 'status-safe';
+  let barPercent = Math.min(100, Math.max(10, ((temp - 15) / (35 - 15)) * 100));
+
+  if (temp < minT - 2) {
+    statusText = `Sangat Dingin (< ${minT}°C)`;
+    pillClass = 'status-alert';
+  } else if (temp < minT) {
+    statusText = `Dingin (< ${minT}°C)`;
     pillClass = 'status-warn';
-  } else if (temp >= 25 && temp <= 30.5) {
-    statusText = 'Ideal (Sehat)';
+  } else if (temp >= minT && temp <= maxT) {
+    statusText = `Normal (Ideal ${activeFish.name})`;
     pillClass = 'status-safe';
-  } else if (temp > 30.5 && temp <= 32) {
-    statusText = 'Mulai Hangat';
+  } else if (temp > maxT && temp <= maxT + 2.5) {
+    statusText = `Mulai Hangat (> ${maxT}°C)`;
     pillClass = 'status-warn';
   } else {
-    statusText = 'Terlalu Panas (Bahaya)';
+    statusText = `Terlalu Panas (> ${maxT + 2.5}°C)`;
     pillClass = 'status-alert';
   }
 
@@ -347,8 +427,10 @@ function updateTemperature(val) {
   tempStatusEl.textContent = statusText;
   tempBarEl.style.width = `${barPercent}%`;
 
-  if (temp > 31 || temp < 24) {
+  if (temp > maxT + 2 || temp < minT - 1.5) {
     tempBarEl.style.backgroundColor = '#dc2626';
+  } else if (temp >= minT && temp <= maxT) {
+    tempBarEl.style.backgroundColor = '#16a34a';
   } else {
     tempBarEl.style.backgroundColor = '#0284c7';
   }
@@ -362,19 +444,22 @@ function updateTurbidity(val) {
   turbidityValueEl.textContent = appState.currentTurbidity;
 
   const ntu = appState.currentTurbidity;
-  let statusText = 'Air Jernih';
+  const activeFish = getActiveFish();
+  const maxTurb = activeFish.turbidityMax || 30;
+
+  let statusText = 'Air Jernih (Aman)';
   let pillClass = 'status-safe';
   let barPercent = Math.min(100, Math.max(10, (ntu / 100) * 100));
 
-  if (ntu < 25) {
-    statusText = 'Air Jernih (Bagus)';
-    pillClass = 'status-safe';
-  } else if (ntu >= 25 && ntu <= 50) {
-    statusText = 'Mulai Sedikit Keruh';
+  if (ntu > maxTurb + 15) {
+    statusText = 'Air Keruh (Bahaya)';
+    pillClass = 'status-alert';
+  } else if (ntu > maxTurb) {
+    statusText = 'Melebihi Batas Ideal';
     pillClass = 'status-warn';
   } else {
-    statusText = 'Air Keruh (Perlu Ganti)';
-    pillClass = 'status-alert';
+    statusText = 'Air Jernih (Bagus)';
+    pillClass = 'status-safe';
   }
 
   turbidityStatusEl.className = `status-pill ${pillClass}`;
@@ -744,9 +829,14 @@ function checkScheduledFeed(nowDate) {
 // ========================================================
 
 /**
- * Menentukan status kondisi air dan keterangan teks
+ * Menentukan status kondisi air dan keterangan teks (disesuaikan dengan tipe ikan aktif)
  */
 function getWaterCondition(temp, turb) {
+  const activeFish = getActiveFish();
+  const minT = activeFish.tempMin || 24;
+  const maxT = activeFish.tempMax || 28;
+  const maxTurb = activeFish.turbidityMax || 30;
+
   // Jika sensor suhu tidak terdeteksi (-127C / lepas)
   if (temp === null || temp === undefined || isNaN(temp)) {
     return {
@@ -759,32 +849,32 @@ function getWaterCondition(temp, turb) {
     };
   }
 
-  if (turb > 50 || temp > 32 || temp < 23) {
+  if (turb > maxTurb + 15 || temp > maxT + 2.5 || temp < minT - 2.5) {
     return {
-      title: 'Peringatan: Kondisi Air Kolam Kritis!',
+      title: `Peringatan: Kondisi Air Kolam Kritis untuk ${activeFish.name}!`,
       badge: 'Perlu Tindakan',
       dotClass: 'alert',
       pillClass: 'status-alert',
       statusLabel: 'Kritis / Waspada',
-      desc: `Suhu ${temp.toFixed(1)}°C dan kekeruhan ${turb}% berisiko bagi kesehatan ikan. Segera kuras atau sirkulasi air 30% dan tunda pemberian pakan berlebih.`
+      desc: `Suhu ${temp.toFixed(1)}°C dan kekeruhan ${turb}% berisiko bagi kesehatan ${activeFish.name}. Standar ideal: suhu ${minT}-${maxT}°C, kekeruhan < ${maxTurb}%. Segera sirkulasi/kuras air dan tunda pemberian pakan.`
     };
-  } else if (turb >= 25 || temp < 25 || temp > 30.5) {
+  } else if (turb > maxTurb || temp < minT || temp > maxT) {
     return {
-      title: 'Kondisi Air Memerlukan Perhatian',
+      title: `Kondisi Air Memerlukan Perhatian (${activeFish.name})`,
       badge: 'Perlu Pengawasan',
       dotClass: 'warn',
       pillClass: 'status-warn',
       statusLabel: 'Perlu Pantauan',
-      desc: `Parameter air berada di batas toleransi (Suhu: ${temp.toFixed(1)}°C, Kekeruhan: ${turb}%). Amati keaktifan ikan dan pastikan aerator kolam bekerja normal.`
+      desc: `Parameter air berada di luar rentang ideal ${activeFish.name} (Suhu saat ini: ${temp.toFixed(1)}°C [Ideal: ${minT}-${maxT}°C], Kekeruhan: ${turb}% [Maks: < ${maxTurb}%]). Amati keaktifan ikan dan pastikan filtrasi bekerja baik.`
     };
   } else {
     return {
-      title: 'Kondisi Air Kolam Sangat Baik',
+      title: `Kondisi Air Kolam Sangat Ideal untuk ${activeFish.name}`,
       badge: 'Kondisi Ideal',
       dotClass: '',
       pillClass: 'status-safe',
       statusLabel: 'Ideal & Aman',
-      desc: `Suhu air (${temp.toFixed(1)}°C) dan tingkat kekeruhan (${turb}%) berada pada rentang ideal budidaya. Ikan nyaman, sehat, dan dapat mengonsumsi pakan dengan lahap.`
+      desc: `Suhu air (${temp.toFixed(1)}°C) dan tingkat kekeruhan (${turb}%) berada pada rentang ideal budidaya ${activeFish.name}. Ikan nyaman, sehat, dan dapat mengonsumsi pakan dengan lahap.`
     };
   }
 }
@@ -796,6 +886,10 @@ function renderWaterTextSummary() {
   const temp = appState.currentTemp;
   const turb = appState.currentTurbidity;
   const cond = getWaterCondition(temp, turb);
+  const activeFish = getActiveFish();
+  const minT = activeFish.tempMin || 24;
+  const maxT = activeFish.tempMax || 28;
+  const maxTurb = activeFish.turbidityMax || 30;
 
   if (waterStatusBadge) waterStatusBadge.textContent = cond.badge;
   if (waterSummaryDot) {
@@ -808,17 +902,17 @@ function renderWaterTextSummary() {
     if (temp === null || isNaN(temp)) {
       waterTempSummaryText.innerHTML = `<strong>Tidak Terdeteksi (-- °C)</strong> — <span style="color:#dc2626;">Cek GPIO 4 & Resistor 4.7kΩ</span>`;
     } else {
-      let tempNote = 'Normal & Sesuai Standar (26 - 30 °C)';
-      if (temp < 25) tempNote = 'Cenderung Dingin (< 25 °C)';
-      else if (temp > 30.5) tempNote = 'Hangat / Panas (> 30.5 °C)';
+      let tempNote = `Sesuai Standar Ideal (${minT} - ${maxT} °C)`;
+      if (temp < minT) tempNote = `Cenderung Dingin (< ${minT} °C)`;
+      else if (temp > maxT) tempNote = `Hangat / Panas (> ${maxT} °C)`;
       waterTempSummaryText.innerHTML = `<strong>${temp.toFixed(1)} °C</strong> — ${tempNote}`;
     }
   }
 
   if (waterTurbSummaryText) {
-    let turbNote = 'Air Jernih & Bersih (< 25%)';
-    if (turb > 50) turbNote = 'Keruh Pekat (> 50%)';
-    else if (turb >= 25) turbNote = 'Mulai Sedikit Keruh (25% - 50%)';
+    let turbNote = `Air Jernih (< ${maxTurb}%)`;
+    if (turb > maxTurb + 15) turbNote = `Keruh Pekat (${turb}%) — Bahaya untuk ${activeFish.name}`;
+    else if (turb > maxTurb) turbNote = `Mulai Sedikit Keruh (> ${maxTurb}%)`;
     waterTurbSummaryText.innerHTML = `<strong>${turb}%</strong> — ${turbNote}`;
   }
 }
@@ -1242,7 +1336,42 @@ function initEventListeners() {
     });
   }
 
+  // Modal Tipe Ikan
+  if (btnOpenFishModal) {
+    btnOpenFishModal.addEventListener('click', openFishModal);
+  }
+  if (quickPillFish) {
+    quickPillFish.addEventListener('click', openFishModal);
+  }
+  if (btnCloseFishModal) {
+    btnCloseFishModal.addEventListener('click', closeFishModal);
+  }
+  if (btnCloseFishModalBottom) {
+    btnCloseFishModalBottom.addEventListener('click', closeFishModal);
+  }
+  if (btnToggleAddFishForm) {
+    btnToggleAddFishForm.addEventListener('click', () => {
+      if (addFishFormBox.style.display === 'none') {
+        addFishFormBox.style.display = 'block';
+        btnToggleAddFishForm.textContent = '✕ Tutup Form';
+      } else {
+        addFishFormBox.style.display = 'none';
+        btnToggleAddFishForm.textContent = '+ Buka Form';
+      }
+    });
+  }
+  if (btnSaveNewFish) {
+    btnSaveNewFish.addEventListener('click', saveNewFishType);
+  }
+
   // Klik di luar dialog (backdrop) untuk menutup modal
+  if (fishTypeModal) {
+    fishTypeModal.addEventListener('click', (e) => {
+      if (e.target === fishTypeModal) {
+        closeFishModal();
+      }
+    });
+  }
   if (iotGuideModal) {
     iotGuideModal.addEventListener('click', (e) => {
       if (e.target === iotGuideModal) {
@@ -1261,6 +1390,7 @@ function initEventListeners() {
   // Tombol Escape di keyboard untuk menutup modal
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      closeFishModal();
       closeIotGuideModal();
       closeSettingsModal();
     }
@@ -1440,4 +1570,223 @@ function closeIotGuideModal() {
   if (iotGuideModal) {
     iotGuideModal.style.display = 'none';
   }
+}
+
+// ========================================================
+// 15. MANAJEMEN TIPE IKAN (KOKI, GUPPY, IKAN MAS)
+// ========================================================
+function getActiveFish() {
+  if (!appState.fishTypes || !Array.isArray(appState.fishTypes) || appState.fishTypes.length === 0) {
+    appState.fishTypes = [...DEFAULT_STATE.fishTypes];
+  }
+  const found = appState.fishTypes.find(f => f.id === appState.selectedFishId);
+  return found || appState.fishTypes[0];
+}
+
+function selectFishType(fishId) {
+  const target = appState.fishTypes.find(f => f.id === fishId);
+  if (!target) return;
+
+  appState.selectedFishId = fishId;
+  saveState();
+  renderFishUI();
+  renderSensors();
+  renderWaterTextSummary();
+
+  // Sinkronisasi info ikan ke Firebase jika sedang mode cloud
+  if (appState.mode === 'firebase' && FIREBASE_CONFIG?.databaseURL) {
+    try {
+      const fishUrl = `${FIREBASE_CONFIG.databaseURL}/pond/fish_profile.json?auth=${FIREBASE_CONFIG.apiKey}`;
+      fetch(fishUrl, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          active_fish_id: target.id,
+          name: target.name,
+          temp_min: target.tempMin,
+          temp_max: target.tempMax,
+          turbidity_max: target.turbidityMax,
+          updated_at: new Date().toISOString()
+        })
+      }).catch(() => {});
+    } catch (e) {}
+  }
+}
+
+function renderFishUI() {
+  const active = getActiveFish();
+
+  // Update Teks di Banner Atas
+  if (activeFishPillText) {
+    activeFishPillText.textContent = `${active.icon} ${active.name}`;
+  }
+  if (currentFishHeading) {
+    currentFishHeading.textContent = `${active.icon} ${active.name}${active.latinName ? ' (' + active.latinName + ')' : ''}`;
+  }
+  if (currentFishDescription) {
+    currentFishDescription.innerHTML = `Suhu Ideal: <strong>${active.tempMin} - ${active.tempMax} °C</strong> | Kekeruhan Maks: <strong>&lt; ${active.turbidityMax}%</strong> | Rekomendasi Pakan: <strong>${active.feedDesc}</strong>`;
+  }
+
+  // Update Label Rentang Skala Suhu di Kartu Suhu Air
+  if (tempLabelCold) tempLabelCold.textContent = `Dingin (<${active.tempMin}°C)`;
+  if (tempLabelIdeal) tempLabelIdeal.textContent = `Ideal (${active.tempMin}-${active.tempMax}°C)`;
+  if (tempLabelWarm) tempLabelWarm.textContent = `Panas (>${active.tempMax}°C)`;
+
+  // Render Deretan Tombol Pill di Dashboard
+  if (fishPillButtonsContainer) {
+    fishPillButtonsContainer.innerHTML = '';
+    appState.fishTypes.forEach(fish => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `fish-pill-btn ${fish.id === active.id ? 'active' : ''}`;
+      btn.dataset.fishId = fish.id;
+      btn.innerHTML = `<span>${fish.icon}</span> <span>${fish.name}</span>`;
+      btn.addEventListener('click', () => {
+        selectFishType(fish.id);
+      });
+      fishPillButtonsContainer.appendChild(btn);
+    });
+
+    // Tombol + Tambah Ikan di baris pill
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'fish-pill-btn fish-pill-btn-add';
+    addBtn.innerHTML = `<span>➕</span> <span>Tambah Tipe Ikan</span>`;
+    addBtn.addEventListener('click', () => {
+      openFishModal();
+      if (addFishFormBox) addFishFormBox.style.display = 'block';
+      if (btnToggleAddFishForm) btnToggleAddFishForm.textContent = '✕ Tutup Form';
+    });
+    fishPillButtonsContainer.appendChild(addBtn);
+  }
+
+  // Render Daftar Kartu di dalam Modal
+  if (fishCardsList) {
+    fishCardsList.innerHTML = '';
+    appState.fishTypes.forEach(fish => {
+      const isSelected = fish.id === active.id;
+      const card = document.createElement('div');
+      card.className = `fish-card-item ${isSelected ? 'active' : ''}`;
+      card.innerHTML = `
+        <div class="fish-card-left">
+          <div class="fish-card-icon">${fish.icon}</div>
+          <div class="fish-card-details">
+            <h4>
+              ${fish.name}
+              ${isSelected ? '<span class="status-pill status-safe" style="font-size:0.7rem; padding:0.1rem 0.45rem;">Sedang Aktif</span>' : ''}
+            </h4>
+            <span class="fish-latin">${fish.latinName || 'Spesies Kolam / Akuarium'}</span>
+            <p class="fish-card-desc">${fish.desc}</p>
+            <div class="fish-specs-row">
+              <span class="fish-spec-chip highlight">🌡️ Suhu: ${fish.tempMin} - ${fish.tempMax} °C</span>
+              <span class="fish-spec-chip">💧 Keruh: &lt; ${fish.turbidityMax}%</span>
+              <span class="fish-spec-chip">🌾 ${fish.feedDesc}</span>
+            </div>
+          </div>
+        </div>
+        <div class="fish-card-actions">
+          ${isSelected 
+            ? '<button type="button" class="btn btn-sm btn-primary" disabled style="opacity:0.9; cursor:default;">✅ Terpilih</button>' 
+            : `<button type="button" class="btn btn-sm btn-outline btn-select-fish" data-fish-id="${fish.id}">Pilih Ikan</button>`
+          }
+          ${!['koki', 'guppy', 'ikan-mas'].includes(fish.id) 
+            ? `<button type="button" class="btn-link-subtle btn-delete-fish" data-fish-id="${fish.id}" style="color:#ef4444; font-size:0.75rem; margin-top:0.25rem;">Hapus</button>`
+            : ''
+          }
+        </div>
+      `;
+
+      // Event listener tombol pilih ikan
+      const selectBtn = card.querySelector('.btn-select-fish');
+      if (selectBtn) {
+        selectBtn.addEventListener('click', () => {
+          selectFishType(fish.id);
+          closeFishModal();
+        });
+      }
+
+      // Event listener tombol hapus (untuk ikan kustom tambahan)
+      const deleteBtn = card.querySelector('.btn-delete-fish');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (confirm(`Hapus profil ikan "${fish.name}"?`)) {
+            appState.fishTypes = appState.fishTypes.filter(f => f.id !== fish.id);
+            if (appState.selectedFishId === fish.id) {
+              appState.selectedFishId = 'koki';
+            }
+            saveState();
+            renderFishUI();
+            renderSensors();
+            renderWaterTextSummary();
+          }
+        });
+      }
+
+      fishCardsList.appendChild(card);
+    });
+  }
+}
+
+function openFishModal() {
+  if (fishTypeModal) {
+    fishTypeModal.style.display = 'flex';
+  }
+}
+
+function closeFishModal() {
+  if (fishTypeModal) {
+    fishTypeModal.style.display = 'none';
+  }
+}
+
+function saveNewFishType() {
+  if (!newFishName) return;
+  const name = newFishName.value.trim();
+  const tempMin = parseFloat(newFishTempMin.value);
+  const tempMax = parseFloat(newFishTempMax.value);
+  const turbMax = parseFloat(newFishTurbMax.value);
+  const icon = (newFishIcon && newFishIcon.value) || '🐠';
+  const feedDesc = (newFishFeedDesc && newFishFeedDesc.value.trim()) || 'Porsi pakan standar harian';
+  const desc = (newFishNotes && newFishNotes.value.trim()) || `Tipe ikan budidaya baru yang ditambahkan ke sistem.`;
+
+  if (!name) {
+    alert('Harap masukkan nama tipe ikan!');
+    newFishName.focus();
+    return;
+  }
+
+  if (isNaN(tempMin) || isNaN(tempMax) || tempMin >= tempMax) {
+    alert('Suhu minimal harus lebih kecil dari suhu maksimal!');
+    return;
+  }
+
+  const newId = 'fish-' + Date.now();
+  const newFish = {
+    id: newId,
+    name: name,
+    latinName: '',
+    icon: icon,
+    tempMin: tempMin,
+    tempMax: tempMax,
+    turbidityMax: isNaN(turbMax) ? 30 : turbMax,
+    feedDesc: feedDesc,
+    desc: desc
+  };
+
+  appState.fishTypes.push(newFish);
+  appState.selectedFishId = newId;
+  saveState();
+
+  // Reset form
+  newFishName.value = '';
+  if (newFishFeedDesc) newFishFeedDesc.value = '';
+  if (newFishNotes) newFishNotes.value = '';
+  if (addFishFormBox) addFishFormBox.style.display = 'none';
+  if (btnToggleAddFishForm) btnToggleAddFishForm.textContent = '+ Buka Form';
+
+  renderFishUI();
+  renderSensors();
+  renderWaterTextSummary();
+  alert(`Berhasil menambahkan tipe ikan "${name}" dan mengaktifkannya!`);
 }

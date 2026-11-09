@@ -1476,6 +1476,244 @@ input:checked + .slider:before {
 }
 
 /* ========================================================
+   BANNER & SELEKTOR TIPE IKAN (KOKI, GUPPY, IKAN MAS)
+   ======================================================== */
+.fish-selector-banner {
+  flex-direction: column;
+  align-items: stretch;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #16a34a;
+}
+
+.fish-selector-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.fish-selector-badge {
+  display: inline-block;
+  background-color: #dcfce7;
+  color: #15803d;
+  font-size: 0.725rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.35rem;
+}
+
+.fish-selector-text h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.25rem;
+}
+
+.fish-desc-text {
+  font-size: 0.825rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.fish-quick-buttons-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #bbf7d0;
+}
+
+.fish-quick-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.fish-pill-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.fish-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #ffffff;
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 0.45rem 0.95rem;
+  border-radius: 9999px;
+  font-family: inherit;
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.fish-pill-btn:hover {
+  border-color: #16a34a;
+  color: #15803d;
+  background-color: #f0fdf4;
+  transform: translateY(-1px);
+}
+
+.fish-pill-btn.active {
+  background-color: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
+}
+
+.fish-pill-btn-add {
+  border-style: dashed;
+  background-color: transparent;
+  color: #0284c7;
+  border-color: #0284c7;
+}
+
+.fish-pill-btn-add:hover {
+  background-color: #e0f2fe;
+  border-style: solid;
+}
+
+/* Modal Fish Cards */
+.fish-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.fish-card-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.95rem 1.15rem;
+  transition: all 0.2s ease;
+  gap: 1rem;
+}
+
+.fish-card-item:hover {
+  border-color: #86efac;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.fish-card-item.active {
+  border: 2px solid #16a34a;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  box-shadow: 0 2px 10px rgba(22, 163, 74, 0.12);
+}
+
+.fish-card-left {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+}
+
+.fish-card-icon {
+  font-size: 2.25rem;
+  line-height: 1;
+}
+
+.fish-card-details h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fish-latin {
+  font-size: 0.775rem;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.fish-card-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0.35rem 0 0.5rem 0;
+}
+
+.fish-specs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.fish-spec-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.18rem 0.5rem;
+  border-radius: 4px;
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.fish-spec-chip.highlight {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+.fish-card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  min-width: 125px;
+}
+
+.add-fish-section {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.add-fish-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.add-fish-form-box {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.15rem;
+  margin-top: 0.75rem;
+  animation: modalPopIn 0.2s ease;
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* ========================================================
    FOOTER
    ======================================================== */
 .app-footer {
@@ -1575,5 +1813,20 @@ input:checked + .slider:before {
   .modal-dialog {
     margin: 0.5rem;
     max-height: 95vh;
+  }
+
+  .fish-card-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .fish-card-actions {
+    width: 100%;
+    align-items: stretch;
+    margin-top: 0.5rem;
+  }
+
+  .form-row-2 {
+    grid-template-columns: 1fr;
   }
 }
