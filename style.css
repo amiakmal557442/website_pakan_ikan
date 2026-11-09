@@ -65,170 +65,177 @@ body {
 }
 
 /* ========================================================
-   LAYAR INTRO / SPLASH SCREEN
+   LAYAR INTRO / SPLASH SCREEN (FULL SCREEN + LOGO FADE IN)
    ======================================================== */
 .intro-splash {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100vh;
-  background: radial-gradient(circle at 50% 40%, #ffffff 0%, #f0f9ff 55%, #e0f2fe 100%);
+  background-color: #f5efe1; /* Warna krem senada kanvas video ikan */
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end; /* Konten & status diletakkan elegan di bagian bawah */
+  padding-bottom: 3.5rem;
   z-index: 99999;
-  transition: opacity 0.65s cubic-bezier(0.4, 0, 0.2, 1), 
-              visibility 0.65s cubic-bezier(0.4, 0, 0.2, 1), 
-              transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+              visibility 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  cursor: pointer;
 }
 
 .intro-splash.fade-out {
   opacity: 0;
   visibility: hidden;
-  transform: scale(1.05);
+  transform: scale(1.03);
   pointer-events: none;
 }
 
+/* Video Animasi Logo Penuh Seluruh Layar (Full Screen Canvas) */
+.intro-bg-video {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100vw;
+  height: 100vh;
+  max-width: 1280px;
+  max-height: 85vh;
+  object-fit: contain; /* Menjaga aspek rasio logo tanpa gepeng / terpotong */
+  z-index: 1;
+  display: block;
+  pointer-events: none;
+  animation: introVideoFadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes introVideoFadeIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Overlay Halus untuk Transisi & Kontras Teks yang Bersih */
+.intro-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 45%, rgba(245, 239, 225, 0) 38%, rgba(245, 239, 225, 0.55) 75%, rgba(245, 239, 225, 0.95) 100%),
+              linear-gradient(to top, rgba(245, 239, 225, 0.92) 0%, rgba(245, 239, 225, 0) 35%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Konten Teks & Progress Bar Intro */
 .intro-content {
+  position: relative;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  max-width: 440px;
-  width: 92%;
-  padding: 2.25rem 1.5rem;
-  animation: introPopIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  max-width: 520px;
+  width: 90%;
+  padding: 1rem;
+  /* Animasi Fade In Halus */
+  animation: logoFadeIn 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
 }
 
-.intro-video-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 380px;
-  aspect-ratio: 16 / 9;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  margin-bottom: 1.35rem;
-  box-shadow: 0 16px 36px -6px rgba(2, 132, 199, 0.35), 0 6px 16px rgba(0, 0, 0, 0.1);
-  border: 2px solid rgba(2, 132, 199, 0.35);
-  background-color: #0f172a;
+@keyframes logoFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.95);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.intro-branding {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-}
-
-.intro-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.intro-video-glow {
-  position: absolute;
-  inset: -14px;
-  border-radius: calc(var(--radius-lg) + 8px);
-  background: radial-gradient(circle, rgba(2, 132, 199, 0.35) 0%, rgba(2, 132, 199, 0) 70%);
-  animation: introPulse 2.4s infinite ease-in-out;
-  pointer-events: none;
-  z-index: -1;
-}
-
-.intro-logo-wrapper {
-  position: relative;
-  width: 100px;
-  height: 100px;
-  margin-bottom: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.intro-logo-glow {
-  position: absolute;
-  inset: -12px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(2, 132, 199, 0.28) 0%, rgba(2, 132, 199, 0) 70%);
-  animation: introPulse 2.4s infinite ease-in-out;
-}
-
-.intro-icon {
-  width: 96px;
-  height: 96px;
-  font-size: 3.25rem;
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
-  border: 2px solid rgba(2, 132, 199, 0.25);
-  border-radius: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 12px 28px -6px rgba(2, 132, 199, 0.25);
-  animation: introFloat 3s infinite ease-in-out;
-  position: relative;
-  z-index: 1;
+  margin-bottom: 1.25rem;
 }
 
 .intro-title {
-  font-size: 2rem;
+  font-size: 2.35rem;
   font-weight: 800;
-  color: #0369a1;
+  color: #0f172a; /* Slate navy gelap senada tinta logo ikan */
+  letter-spacing: -0.025em;
   margin-bottom: 0.35rem;
-  letter-spacing: -0.02em;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.85);
 }
 
 .intro-subtitle {
-  font-size: 0.925rem;
-  color: var(--text-muted);
-  margin-bottom: 2rem;
-  font-weight: 500;
+  font-size: 0.95rem;
+  color: #475569;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
 }
 
 .intro-progress-container {
-  width: 220px;
+  width: 240px;
   height: 6px;
-  background-color: rgba(226, 232, 240, 0.8);
+  background-color: rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.06);
   border-radius: 9999px;
   overflow: hidden;
   margin-bottom: 0.75rem;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .intro-progress-bar {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #0284c7 0%, #38bdf8 100%);
+  background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
   border-radius: 9999px;
-  transition: width 0.35s ease;
+  transition: width 0.4s ease;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.35);
 }
 
 .intro-status {
-  font-size: 0.825rem;
-  color: var(--text-light);
+  font-size: 0.85rem;
+  color: #64748b;
   font-weight: 500;
   min-height: 1.25rem;
   transition: opacity 0.2s ease;
 }
 
 .intro-skip-btn {
-  margin-top: 1.75rem;
-  background-color: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(2, 132, 199, 0.2);
-  color: var(--primary-hover);
+  margin-top: 1.25rem;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  color: #0369a1;
   font-family: inherit;
   font-size: 0.825rem;
   font-weight: 600;
-  padding: 0.45rem 1.2rem;
+  padding: 0.45rem 1.35rem;
   border-radius: 9999px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 .intro-skip-btn:hover {
-  background-color: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
+  background: #ffffff;
+  color: #0284c7;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
 }
 
 @keyframes introPopIn {

@@ -304,7 +304,7 @@ function dismissIntro() {
   introSplash.classList.add('fade-out');
   setTimeout(() => {
     introSplash.style.display = 'none';
-  }, 700);
+  }, 800);
 }
 
 function initIntroSplash() {
@@ -318,7 +318,9 @@ function initIntroSplash() {
 
     // Otomatis selesai dan masuk jika video telah tuntas diputar
     introVideo.addEventListener('ended', () => {
-      dismissIntro();
+      setTimeout(() => {
+        dismissIntro();
+      }, 350);
     });
   }
 
@@ -340,13 +342,13 @@ function initIntroSplash() {
     if (introFinished) return;
     if (introProgressBar) introProgressBar.style.width = '35%';
     if (introStatusText) introStatusText.textContent = 'Memeriksa sensor suhu & kekeruhan air...';
-  }, 700);
+  }, 600);
 
   setTimeout(() => {
     if (introFinished) return;
     if (introProgressBar) introProgressBar.style.width = '70%';
     if (introStatusText) introStatusText.textContent = 'Menghubungkan kontrol dispenser pakan otomatis...';
-  }, 1700);
+  }, 1600);
 
   setTimeout(() => {
     if (introFinished) return;
@@ -354,10 +356,10 @@ function initIntroSplash() {
     if (introStatusText) introStatusText.textContent = 'Sistem kolam siap digunakan!';
   }, 2700);
 
-  // Fallback timer maksimal 3.5 detik jika video tidak trigger event ended
+  // Fallback timer maksimal 3.8 detik jika video tidak trigger event ended
   setTimeout(() => {
     dismissIntro();
-  }, 3500);
+  }, 3800);
 }
 
 // ========================================================

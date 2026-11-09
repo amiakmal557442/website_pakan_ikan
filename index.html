@@ -15,20 +15,24 @@
 
 <body>
 
-  <!-- Layar Intro / Splash Screen Pembuka -->
+  <!-- Layar Intro / Splash Screen Pembuka (Full Screen + Animasi Logo Fade In) -->
   <div id="introSplash" class="intro-splash">
+    <!-- Video Animasi Logo Layar Penuh -->
+    <video id="introVideo" class="intro-bg-video" autoplay muted playsinline preload="auto">
+      <source src="Logo/intro_video.mp4" type="video/mp4">
+      <source src="WhatsApp%20Video%202026-11-09%20at%2018.06.16.mp4" type="video/mp4">
+      Browser Anda tidak mendukung pemutar video HTML5.
+    </video>
+
+    <!-- Overlay Gradasi Halus -->
+    <div class="intro-overlay"></div>
+
+    <!-- Konten Intro Layar Penuh dengan Animasi Logo Fade In -->
     <div class="intro-content">
-      <!-- Video Animasi Intro Pembuka -->
-      <div class="intro-video-wrapper">
-        <video id="introVideo" class="intro-video" autoplay muted playsinline preload="auto">
-          <source src="Logo/intro_video.mp4" type="video/mp4">
-          <source src="WhatsApp%20Video%202026-11-09%20at%2018.06.16.mp4" type="video/mp4">
-          Browser Anda tidak mendukung pemutar video HTML5.
-        </video>
-        <div class="intro-video-glow"></div>
+      <div class="intro-branding">
+        <h1 class="intro-title">Ambajaya Fish</h1>
+        <p class="intro-subtitle">Sistem Pakan &amp; Pemantau Air Kolam</p>
       </div>
-      <h1 class="intro-title">Ambajaya Fish</h1>
-      <p class="intro-subtitle">Sistem Pakan &amp; Pemantau Air Kolam</p>
 
       <!-- Progress Bar Memuat Sistem -->
       <div class="intro-progress-container">
