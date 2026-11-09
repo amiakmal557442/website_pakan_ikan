@@ -794,6 +794,28 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-family: inherit;
+  font-size: 0.85rem;
+  background-color: #ffffff;
+  color: var(--text-main);
+  outline: none;
+}
+
+.schedule-grams-select {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.85rem;
+  background-color: #ffffff;
+  color: var(--text-main);
+  outline: none;
+  cursor: pointer;
+  flex: 1;
+}
+
+.schedule-inputs input[type="time"]:focus,
+.schedule-grams-select:focus {
+  border-color: var(--border-focus);
 }
 
 .schedule-list {
@@ -1174,6 +1196,18 @@ input:checked + .slider:before {
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modal-header {
@@ -1279,6 +1313,166 @@ input:checked + .slider:before {
   justify-content: flex-end;
   gap: 0.75rem;
   background-color: #fafbfc;
+}
+
+/* ========================================================
+   MODAL PANDUAN PEMASANGAN IOT
+   ======================================================== */
+.modal-dialog-lg {
+  max-width: 680px;
+}
+
+.iot-guide-intro {
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%);
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius-md);
+  padding: 1rem 1.15rem;
+  margin-bottom: 1.25rem;
+}
+
+.iot-guide-intro p {
+  font-size: 0.875rem;
+  color: #0369a1;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.iot-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 1.25rem 0 0.65rem 0;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.iot-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+}
+
+.iot-table {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+  font-size: 0.825rem;
+  text-align: left;
+}
+
+.iot-table th {
+  background-color: var(--bg-subtle);
+  color: var(--text-main);
+  font-weight: 600;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.iot-table td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-main);
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.iot-table tr:last-child td {
+  border-bottom: none;
+}
+
+.iot-table tr:hover td {
+  background-color: #f8fafc;
+}
+
+.pin-chip {
+  display: inline-block;
+  background-color: #0284c7;
+  color: #ffffff;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.775rem;
+}
+
+.pin-chip-subtle {
+  display: inline-block;
+  background-color: #f1f5f9;
+  color: #334155;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 600;
+  font-size: 0.775rem;
+  border: 1px solid var(--border);
+}
+
+.iot-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.iot-step-item {
+  display: flex;
+  gap: 0.85rem;
+  background-color: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  align-items: flex-start;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.iot-step-item:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.iot-step-num {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  background-color: var(--primary);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.iot-step-body h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.3rem;
+}
+
+.iot-step-body p {
+  font-size: 0.825rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.iot-alert-box {
+  background-color: var(--warning-light);
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  font-size: 0.825rem;
+  color: #92400e;
+  line-height: 1.55;
+  margin-top: 1rem;
 }
 
 /* ========================================================
