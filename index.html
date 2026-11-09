@@ -1,5 +1,6 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +8,11 @@
   <!-- Google Fonts: Inter untuk tampilan modern, rapi, dan mudah dibaca -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
   <!-- Layar Intro / Splash Screen Pembuka -->
@@ -21,7 +24,7 @@
       </div>
       <h1 class="intro-title">Ambajaya Fish</h1>
       <p class="intro-subtitle">Sistem Pakan &amp; Pemantau Air Kolam</p>
-      
+
       <!-- Progress Bar Memuat Sistem -->
       <div class="intro-progress-container">
         <div class="intro-progress-bar" id="introProgressBar"></div>
@@ -70,7 +73,26 @@
       <div class="banner-quick-stats">
         <div class="quick-pill">
           <span class="pill-label">Pakan Terjadwal Berikutnya:</span>
-          <span class="pill-value" id="nextFeedScheduleBadge">17:00 (50 gr)</span>
+          <span class="pill-value" id="nextFeedScheduleBadge">Memuat...</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="overview-banner" style="border-left: 4px solid var(--primary);">
+      <div class="banner-info">
+        <h2>Catatan Penting &amp; Penerapan Sistem</h2>
+        <p>Web ini dikhususkan untuk ikan dengan ukuran kecil seperti ikan hias, ikan mas, ikan cupang, ikan guppy, dan
+          sejenisnya.
+          <br> Pada ukuran akuarium nya sendiri gunakan akuarium kecil dengan kapasitas 40 X 30 x 30 dan daya tampung
+          kisaran 40 sampai 60 Liter.
+          <br> Dan untuk pakannya sendiri termasuk opsional dengan daya tampung kisaran 250 gram pakan.
+        </p>
+
+        <!-- Tombol untuk memunculkan popup cara pemasangan perangkat IoT -->
+        <div style="margin-top: 0.85rem;">
+          <button type="button" class="btn btn-primary" id="btnOpenIotGuide">
+            🛠️ Cara Pemasangan Perangkat IoT
+          </button>
         </div>
       </div>
     </section>
@@ -112,7 +134,7 @@
         <div class="metric-body">
           <div class="metric-value-wrapper">
             <span class="metric-value" id="turbidityValue">18</span>
-            <span class="metric-unit">NTU</span>
+            <span class="metric-unit">%</span>
           </div>
           <div class="status-pill status-safe" id="turbidityStatus">Air Jernih</div>
         </div>
@@ -121,9 +143,9 @@
             <div class="range-bar-fill" id="turbidityBar" style="width: 25%;"></div>
           </div>
           <div class="range-labels">
-            <span>Jernih (&lt;25)</span>
-            <span>Sedang (25-50)</span>
-            <span>Keruh (&gt;50)</span>
+            <span>Jernih (&lt;25%)</span>
+            <span>Sedang (25-50%)</span>
+            <span>Keruh (&gt;50%)</span>
           </div>
         </div>
       </div>
@@ -193,21 +215,14 @@
             <span class="badge">Dispenser Servo</span>
           </div>
           <div class="card-body">
-            <p class="section-desc">Pilih jumlah pakan yang ingin dikeluarkan langsung ke kolam:</p>
-            
+            <p class="section-desc">Pilih jumlah pakan yang ingin dikeluarkan langsung ke kolam (setiap 5gram bernilai
+              0,5 ms)</p>
+
             <div class="feed-options-grid">
               <button class="feed-preset-btn" data-grams="10">10 Gram</button>
               <button class="feed-preset-btn active" data-grams="25">25 Gram</button>
               <button class="feed-preset-btn" data-grams="50">50 Gram</button>
               <button class="feed-preset-btn" data-grams="100">100 Gram</button>
-            </div>
-
-            <div class="custom-gram-input">
-              <label for="customGramInput">Atau tentukan takaran manual (Gram):</label>
-              <div class="input-with-button">
-                <input type="number" id="customGramInput" min="5" max="300" value="25" placeholder="Contoh: 30">
-                <span class="input-unit">gram</span>
-              </div>
             </div>
 
             <button class="btn btn-primary btn-block btn-feed" id="btnDispenseFeed">
@@ -221,13 +236,15 @@
                 <strong>Jeda Pakan 5 Jam Sedang Aktif</strong>
               </div>
               <p class="cooldown-desc">
-                Pakan terakhir diberikan pada pukul <b id="cooldownLastTime">--:--</b>. Tombol pakan dikunci selama 5 jam untuk mencegah overfeeding dan menjaga kualitas air.
+                Pakan terakhir diberikan pada pukul <b id="cooldownLastTime">--:--</b>. Tombol pakan dikunci selama 5
+                jam untuk mencegah overfeeding dan menjaga kualitas air.
               </p>
               <div class="cooldown-badge">
                 Sisa Waktu Jeda: <strong id="cooldownTimerBadge">05j 00m 00d</strong>
               </div>
               <div class="cooldown-actions">
-                <button type="button" class="btn-link-subtle" id="btnResetCooldown" title="Reset jeda 5 jam untuk keperluan pengujian / demo">
+                <button type="button" class="btn-link-subtle" id="btnResetCooldown"
+                  title="Reset jeda 5 jam untuk keperluan pengujian / demo">
                   ↺ Reset Jeda (Khusus Uji Coba)
                 </button>
               </div>
@@ -249,7 +266,7 @@
           </div>
           <div class="card-body">
             <p class="section-desc">Hitung dosis pakan harian berdasarkan biomassa & jumlah populasi ikan di kolam:</p>
-            
+
             <div class="calc-form-grid">
               <div class="form-group">
                 <label for="calcFishCount">Jumlah Ikan (Ekor)</label>
@@ -312,10 +329,13 @@
               <h4>Tambah Jadwal Baru</h4>
               <div class="schedule-inputs">
                 <input type="time" id="newScheduleTime" value="12:00">
-                <div class="input-with-button">
-                  <input type="number" id="newScheduleGrams" value="50" min="5" max="250" placeholder="Gram">
-                  <span class="input-unit">gram</span>
-                </div>
+                <select id="newScheduleGrams" class="schedule-grams-select" title="Pilih Takaran Pakan">
+                  <option value="5">5 Gram (Porsi Mikro)</option>
+                  <option value="10">10 Gram (Porsi Kecil)</option>
+                  <option value="25" selected>25 Gram (Porsi Sedang)</option>
+                  <option value="50">50 Gram (Porsi Besar)</option>
+                  <option value="100">100 Gram (Porsi Ekstra)</option>
+                </select>
                 <button class="btn btn-primary btn-sm" id="btnSaveSchedule">Simpan</button>
               </div>
             </div>
@@ -341,7 +361,7 @@
             <span class="badge" id="waterStatusBadge">Kondisi Ideal</span>
           </div>
           <div class="card-body">
-            
+
             <!-- Rangkuman Status Teks Terkini -->
             <div class="water-text-summary-box">
               <div class="summary-status-header">
@@ -349,23 +369,26 @@
                 <h4 id="waterStatusSummaryTitle">Kondisi Air Kolam Sangat Baik</h4>
               </div>
               <p class="summary-status-desc" id="waterStatusSummaryDesc">
-                Suhu air saat ini berada pada tingkat ideal dan air kolam terpantau jernih. Ikan nyaman, sehat, dan dapat mengonsumsi pakan dengan baik.
+                Suhu air saat ini berada pada tingkat ideal dan air kolam terpantau jernih. Ikan nyaman, sehat, dan
+                dapat mengonsumsi pakan dengan baik.
               </p>
-              
+
               <!-- Poin-poin Parameter Teks -->
               <div class="water-key-points">
                 <div class="key-point-item">
                   <span class="point-icon">🌡️</span>
                   <div>
                     <span class="point-label">Suhu Air Terkini</span>
-                    <span class="point-text" id="waterTempSummaryText"><strong>28.5 °C</strong> — Normal & Sesuai Standar (26 - 30 °C)</span>
+                    <span class="point-text" id="waterTempSummaryText"><strong>28.5 °C</strong> — Normal & Sesuai
+                      Standar (26 - 30 °C)</span>
                   </div>
                 </div>
                 <div class="key-point-item">
-                  <span class="point-icon">💧</span>
+                  <span class="point-icon">🫗</span>
                   <div>
                     <span class="point-label">Kekeruhan Terkini</span>
-                    <span class="point-text" id="waterTurbSummaryText"><strong>18 NTU</strong> — Air Jernih & Bersih (&lt; 25 NTU)</span>
+                    <span class="point-text" id="waterTurbSummaryText"><strong>18%</strong> — Air Jernih & Bersih
+                      (&lt; 25%)</span>
                   </div>
                 </div>
               </div>
@@ -377,7 +400,7 @@
                 <h4>Riwayat Catatan Suhu & Kekeruhan (Teks):</h4>
                 <small class="history-note">Diperbarui otomatis berkala</small>
               </div>
-              
+
               <div class="water-readings-list" id="waterReadingsList">
                 <!-- Diisi secara dinamis via JavaScript -->
               </div>
@@ -401,7 +424,7 @@
       </div>
       <div class="modal-body">
         <p class="modal-text">
-          Website ini dapat berjalan mandiri (Mode Simulasi) atau dihubungkan langsung ke mikrokontroler seperti 
+          Website ini dapat berjalan mandiri (Mode Simulasi) atau dihubungkan langsung ke mikrokontroler seperti
           <strong>Arduino dengan WiFi ESP8266, ESP32, atau Webhook</strong>.
         </p>
 
@@ -429,7 +452,8 @@
             <label for="firebaseApiUrlInput">URL Endpoint Backend PHP / Laravel:</label>
             <input type="text" id="firebaseApiUrlInput" placeholder="backend-php/api.php">
             <small class="form-hint">
-              Contoh: <code>backend-php/api.php</code> (PHP Native) atau <code>http://localhost:8000/api/pond</code> (Laravel).
+              Contoh: <code>backend-php/api.php</code> (PHP Native) atau <code>http://localhost:8000/api/pond</code>
+              (Laravel).
             </small>
           </div>
           <div class="form-group">
@@ -445,7 +469,8 @@
             <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.45;">
               Kunci API &amp; URL Firebase disimpan aman di file backend server:
               <br>• <strong>PHP Native:</strong> Edit file <code>backend-php/firebase_config.php</code>
-              <br>• <strong>Laravel:</strong> Masukkan ke file <code>.env</code> (lihat <code>laravel-backend/.env.example</code>)
+              <br>• <strong>Laravel:</strong> Masukkan ke file <code>.env</code> (lihat
+              <code>laravel-backend/.env.example</code>)
             </p>
           </div>
         </div>
@@ -490,6 +515,203 @@
     </div>
   </div>
 
+  <!-- Modal Popup Panduan Pemasangan Perangkat IoT -->
+  <div class="modal-backdrop" id="iotGuideModal" style="display: none;">
+    <div class="modal-dialog modal-dialog-lg">
+      <div class="modal-header">
+        <div>
+          <h3>🛠️ Panduan Pemasangan Perangkat IoT</h3>
+          <p class="card-subhead" style="margin-top: 2px;">Langkah perakitan hardware, sensor kolam, servo, dan
+            konfigurasi ESP32</p>
+        </div>
+        <button class="modal-close" id="btnCloseIotGuideModal" title="Tutup Modal">&times;</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Ringkasan Sistem -->
+        <div class="iot-guide-intro">
+          <p>
+            🐟 <strong>Sistem Otomasi Pakan &amp; Monitoring Kolam (Ambajaya Fish)</strong> menggunakan mikrokontroler
+            <strong>ESP32</strong> yang terhubung ke sensor kualitas air kolam dan motor servo dispenser pakan.
+            Perangkat berkomunikasi secara <em>real-time</em> dengan dashboard ini menggunakan <strong>Firebase Cloud
+              Database</strong> atau <strong>Koneksi Langsung WiFi Lokal</strong>.
+          </p>
+        </div>
+
+        <!-- 1. Daftar Komponen -->
+        <h4 class="iot-section-title">📦 1. Komponen &amp; Modul yang Diperlukan</h4>
+        <ul
+          style="font-size: 0.85rem; color: var(--text-main); line-height: 1.6; padding-left: 1.25rem; margin-bottom: 1rem;">
+          <li><strong>ESP32 DevKit V1</strong> (Mikrokontroler utama dengan WiFi built-in).</li>
+          <li><strong>Sensor Suhu DS18B20 (Waterproof)</strong> + Resistor 4.7kΩ (untuk jalur data pull-up).</li>
+          <li><strong>Sensor Kekeruhan Air (Analog Turbidity Sensor Gravity)</strong> + Modul Driver ADC.</li>
+          <li><strong>Motor Servo Feeder (SG90 / MG995)</strong> untuk membuka dan menutup corong pakan ikan.</li>
+          <li><strong>Modul HX711 &amp; Load Cell</strong> (Opsional: timbangan pengukur sisa pakan di tabung).</li>
+          <li><strong>Adaptor Catu Daya 5V (2A - 3A)</strong> dan kabel jumper.</li>
+        </ul>
+
+        <!-- 2. Tabel Skema Pinout -->
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin: 1.25rem 0 0.65rem 0; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border);">
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin: 0;">🔌 2. Skema Pengkabelan
+            (Wiring Pin ESP32)</h4>
+          <button type="button" class="btn btn-outline btn-sm" id="btnCopyPinout"
+            style="padding: 0.2rem 0.55rem; font-size: 0.75rem;">
+            📋 Salin Pin
+          </button>
+        </div>
+        <div class="iot-table-wrapper">
+          <table class="iot-table">
+            <thead>
+              <tr>
+                <th>Komponen</th>
+                <th>Kabel Sensor</th>
+                <th>Pin ESP32</th>
+                <th>Keterangan / Catatan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <strong>Sensor Suhu DS18B20</strong><br>
+                  <small style="color:var(--text-muted)">Pengukur suhu air kolam</small>
+                </td>
+                <td>
+                  Merah (VCC)<br>
+                  Hitam (GND)<br>
+                  Kuning / Biru (Data)
+                </td>
+                <td>
+                  <span class="pin-chip-subtle">3.3V / 5V</span><br>
+                  <span class="pin-chip-subtle">GND</span><br>
+                  <span class="pin-chip">GPIO 4 (D4)</span>
+                </td>
+                <td>Wajib pasang <strong>resistor 4.7kΩ</strong> antara pin VCC dan Data sebagai pull-up.</td>
+              </tr>
+              <tr>
+                <td>
+                  <strong>Sensor Kekeruhan (Turbidity)</strong><br>
+                  <small style="color:var(--text-muted)">Pengukur kejernihan air</small>
+                </td>
+                <td>
+                  VCC (+5V)<br>
+                  GND<br>
+                  AOUT (Analog Output)
+                </td>
+                <td>
+                  <span class="pin-chip-subtle">5V</span><br>
+                  <span class="pin-chip-subtle">GND</span><br>
+                  <span class="pin-chip">GPIO 34 (ADC1)</span>
+                </td>
+                <td>Gunakan pin <strong>ADC1 (GPIO 34)</strong> karena ADC2 dinonaktifkan ESP32 saat WiFi menyala.</td>
+              </tr>
+              <tr>
+                <td>
+                  <strong>Motor Servo Dispenser</strong><br>
+                  <small style="color:var(--text-muted)">Penggerak katup pakan</small>
+                </td>
+                <td>
+                  Merah (Power +5V)<br>
+                  Coklat / Hitam (GND)<br>
+                  Oranye / Kuning (Signal)
+                </td>
+                <td>
+                  <span class="pin-chip-subtle">5V Eksternal</span><br>
+                  <span class="pin-chip-subtle">GND (Common)</span><br>
+                  <span class="pin-chip">GPIO 18</span>
+                </td>
+                <td>Disarankan gunakan sumber 5V terpisah dan <strong>satukan semua GND (Common Ground)</strong>.</td>
+              </tr>
+              <tr>
+                <td>
+                  <strong>Timbangan Pakan (HX711)</strong><br>
+                  <small style="color:var(--text-muted)">Sensor berat wadah pakan</small>
+                </td>
+                <td>
+                  VCC / GND<br>
+                  DT (Data Output)<br>
+                  SCK (Clock)
+                </td>
+                <td>
+                  <span class="pin-chip-subtle">3.3V / GND</span><br>
+                  <span class="pin-chip">GPIO 16</span><br>
+                  <span class="pin-chip">GPIO 17</span>
+                </td>
+                <td>Nilai faktor kalibrasi dapat disesuaikan pada file <code>arduino_code.ino</code>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3. Langkah Pemasangan Fisik -->
+        <h4 class="iot-section-title">📋 3. Langkah Pemasangan Fisik di Kolam / Akuarium</h4>
+        <div class="iot-steps-list">
+          <div class="iot-step-item">
+            <div class="iot-step-num">1</div>
+            <div class="iot-step-body">
+              <h4>Pemasangan Probe Suhu Logam Waterproof</h4>
+              <p>Celupkan ujung probe stainless steel DS18B20 ke dalam air kolam sekitar 10–20 cm dari permukaan.
+                Ikatkan kabel ke tepi kolam agar tidak mudah terbawa pusaran arus air.</p>
+            </div>
+          </div>
+
+          <div class="iot-step-item">
+            <div class="iot-step-num">2</div>
+            <div class="iot-step-body">
+              <h4>Pemasangan Probe Sensor Kekeruhan (Turbidity)</h4>
+              <p>Tempatkan probe kaca sensor kekeruhan pada air yang mengalir tenang dan hindari gelembung aerator
+                langsung. <strong>PERHATIAN:</strong> Hanya celupkan probe sensor, jangan merendam modul PCB driver ke
+                dalam air!</p>
+            </div>
+          </div>
+
+          <div class="iot-step-item">
+            <div class="iot-step-num">3</div>
+            <div class="iot-step-body">
+              <h4>Perakitan Wadah Tabung &amp; Motor Servo Pakan</h4>
+              <p>Pasangkan motor servo pada penutup / corong pelet di atas kolam pada tempat yang terlindung dari
+                percikan air. Gunakan pelet kecil (ikan cupang, guppy, ikan mas kecil) agar putaran katup tidak macet.
+              </p>
+            </div>
+          </div>
+
+          <div class="iot-step-item">
+            <div class="iot-step-num">4</div>
+            <div class="iot-step-body">
+              <h4>Pengkabelan Sumber Daya Bersama (Common Ground)</h4>
+              <p>Hubungkan adaptor 5V (2A - 3A). Pastikan seluruh kabel GND (ESP32, servo, dan modul sensor) terhubung
+                satu sama lain (Common Ground) agar mikrokontroler tidak restart saat servo bergerak.</p>
+            </div>
+          </div>
+
+          <div class="iot-step-item">
+            <div class="iot-step-num">5</div>
+            <div class="iot-step-body">
+              <h4>Upload Kode Program Arduino IDE</h4>
+              <p>Buka file <code>arduino_code/arduino_code.ino</code> di <strong>Arduino IDE</strong>. Masukkan nama
+                WiFi (SSID) &amp; kata sandi Anda, lalu klik <strong>Upload</strong>. Alat akan otomatis terhubung ke
+                sistem cloud Firebase.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tips Keamanan -->
+        <div class="iot-alert-box">
+          ⚠️ <strong>Catatan &amp; Tips Tambahan:</strong>
+          <br>• Simpan board ESP32 dan modul rangkaian di dalam kotak plastik pelindung (waterproof project box).
+          <br>• Gunakan pelet pakan butiran kecil (0.5 mm – 1.5 mm) yang dirancang khusus untuk jenis ikan hias.
+          <br>• Anda dapat menguji sambungan alat langsung melalui menu <strong>⚙️ Pengaturan Alat</strong> di pojok
+          kanan atas dashboard.
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btnIotGuideToSettings">⚙️ Buka Pengaturan Alat</button>
+        <button type="button" class="btn btn-primary" id="btnCloseIotGuideBottom">Saya Mengerti &amp; Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer Standar -->
   <footer class="app-footer">
     <div class="footer-container">
@@ -500,4 +722,5 @@
 
   <script src="script.js"></script>
 </body>
+
 </html>

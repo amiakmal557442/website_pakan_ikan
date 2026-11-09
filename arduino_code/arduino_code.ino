@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ==============================================================================
  * PROYEK: SISTEM MONITORING AIR & PAKAN IKAN OTOMATIS (AMBAJAYA FISH)
  * Microcontroller: ESP32 + Firebase Realtime Database + Web Dashboard
@@ -12,7 +12,7 @@
  * 
  * Fitur Utama yang Digabungkan:
  * 1. Logika Fuzzy Sugeno (Zero-Order) untuk penentuan kelayakan pakan otomatis.
- * 2. Pembacaan Akurat Sensor Suhu DS18B20 & Kekeruhan Air (ADC + NTU).
+ * 2. Pembacaan Akurat Sensor Suhu DS18B20 & Kekeruhan Air (ADC + Persentase %).
  * 3. Timbangan Pakan Real-time menggunakan HX711 Load Cell (dalam satuan Gram).
  * 4. Sinkronisasi Dua Arah dengan Firebase Realtime Database:
  *    - Upload telemetri sensor secara berkala.
@@ -43,8 +43,8 @@ constexpr uint8_t PIN_SERVO     = 18;  // Motor Servo Dispenser Pakan
 // >>> [2] KREDENSIAL FIREBASE RESMI ANDA TELAH DITERAPKAN DI SINI <<<
 // ==============================================================================
 // Ganti dengan SSID dan Password WiFi Anda
-const char *WIFI_SSID     = "CirkitWifi";
-const char *WIFI_PASSWORD = "";
+const char *WIFI_SSID     = "Tusk";
+const char *WIFI_PASSWORD = "Kaine234";
 
 // URL Firebase Realtime Database Anda (Penuh dengan https://, tanpa garis miring di akhir)
 const char *FIREBASE_URL  = "https://connect-esp32-to-database-default-rtdb.asia-southeast1.firebasedatabase.app"; 
@@ -140,14 +140,14 @@ void sampleSensors() {
     tempSensorOk = false;
   }
 
-  // 2. Kekeruhan Air (ADC1 & Estimasi NTU)
+  // 2. Kekeruhan Air (ADC1 & Estimasi % Kekeruhan)
   const int adc = analogRead(PIN_TURBIDITY);
   if (adc >= 0 && adc <= 4095) {
     turbidityAdc = static_cast<float>(adc);
 
-    // Konversi ADC ke NTU (0 - 100 NTU) yang realistis untuk sensor kekeruhan analog di ESP32:
-    // Tegangan/ADC tinggi = Jernih (NTU rendah)
-    // Tegangan/ADC rendah = Keruh (NTU tinggi)
+    // Konversi ADC ke Persentase Kekeruhan (0 - 100%) yang realistis untuk sensor kekeruhan analog di ESP32:
+    // Tegangan/ADC tinggi = Jernih (0% keruh)
+    // Tegangan/ADC rendah = Keruh (100% keruh)
     float ntu = 0.0f;
     if (turbidityAdc >= 3200.0f) {
       ntu = (3800.0f - turbidityAdc) / (3800.0f - 3200.0f) * 20.0f;
@@ -271,7 +271,7 @@ void uploadTelemetryToFirebase() {
 
     int httpCode = http.PATCH(body);
     if (httpCode > 0) {
-      Serial.printf("[Firebase] Telemetri terkirim! (HTTP %d | Suhu: %s | Keruh: %.0f ADC / %d NTU)\n",
+      Serial.printf("[Firebase] Telemetri terkirim! (HTTP %d | Suhu: %s | Keruh: %.0f ADC / %d%%)\n",
         httpCode, isfinite(waterC) ? (String(waterC, 2) + " C").c_str() : "DISCONNECTED (null)",
         turbidityAdc, (int)turbidityNtu);
     } else {
@@ -446,11 +446,11 @@ void loop() {
     updateFeeder(now);
 
     if (isfinite(waterC)) {
-      Serial.printf("[Sensor] Suhu=%.2f C | Keruh=%.0f ADC (~%d NTU) | Pakan=%.1f g | Sugeno=%.2f | Servo=%s\n",
+      Serial.printf("[Sensor] Suhu=%.2f C | Keruh=%.0f ADC (~%d%%) | Pakan=%.1f g | Sugeno=%.2f | Servo=%s\n",
         waterC, turbidityAdc, (int)turbidityNtu, stockGrams, sugenoScore,
         feeding ? "TERBUKA" : "TERTUTUP");
     } else {
-      Serial.printf("[Sensor] Suhu=[TIDAK TERDETEKSI / -127C] | Keruh=%.0f ADC (~%d NTU) | Pakan=%.1f g | Sugeno=%.2f | Servo=%s\n",
+      Serial.printf("[Sensor] Suhu=[TIDAK TERDETEKSI / -127C] | Keruh=%.0f ADC (~%d%%) | Pakan=%.1f g | Sugeno=%.2f | Servo=%s\n",
         turbidityAdc, (int)turbidityNtu, stockGrams, sugenoScore,
         feeding ? "TERBUKA" : "TERTUTUP");
     }

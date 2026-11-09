@@ -2,7 +2,7 @@
  * SISTEM PAKAN & MONITORING KOLAM IKAN
  * Logika Aplikasi (JavaScript):
  * - Pemantauan Suhu Air (°C)
- * - Pemantauan Kekeruhan Air (NTU)
+ * - Pemantauan Kekeruhan Air (%)
  * - Perhitungan & Kontrol Gram Pakan yang Dikeluarkan
  * - Kalkulator Kebutuhan Pakan Ikan
  * - Manajemen Jadwal Pakan
@@ -53,11 +53,11 @@ const DEFAULT_STATE = {
   currentTurbidity: 18,
   sugenoScore: 0.85,
 
-  // Jadwal Pakan
+  // Jadwal Pakan (Disesuaikan porsi bulat & ideal untuk ikan kecil)
   schedules: [
-    { id: 1, time: '07:30', grams: 50, enabled: true },
-    { id: 2, time: '12:30', grams: 50, enabled: true },
-    { id: 3, time: '17:00', grams: 50, enabled: true }
+    { id: 1, time: '07:30', grams: 25, enabled: true },
+    { id: 2, time: '12:30', grams: 25, enabled: true },
+    { id: 3, time: '17:00', grams: 25, enabled: true }
   ],
 
   // Riwayat Pembacaan Sensor Air Berbasis Teks
@@ -83,6 +83,12 @@ function loadState() {
       const merged = { ...DEFAULT_STATE, ...parsed };
       if (!merged.waterReadings || !Array.isArray(merged.waterReadings) || merged.waterReadings.length === 0) {
         merged.waterReadings = [...DEFAULT_STATE.waterReadings];
+      }
+      // Sanitasi nilai jadwal agar selalu bilangan bulat & minimal 5 gram
+      if (Array.isArray(merged.schedules)) {
+        merged.schedules.forEach(s => {
+          s.grams = Math.max(5, Math.round(parseFloat(s.grams) || 25));
+        });
       }
       return merged;
     }
@@ -131,7 +137,6 @@ const connectionTextEl = document.getElementById('connectionText');
 
 // Kontrol Pakan Cepat
 const feedPresetBtns = document.querySelectorAll('.feed-preset-btn');
-const customGramInput = document.getElementById('customGramInput');
 const btnDispenseFeed = document.getElementById('btnDispenseFeed');
 const dispenseGramsLabel = document.getElementById('dispenseGramsLabel');
 const feedActionProgress = document.getElementById('feedActionProgress');
@@ -195,6 +200,14 @@ const btnTestConnection = document.getElementById('btnTestConnection');
 const testConnectionResult = document.getElementById('testConnectionResult');
 const btnTestFirebase = document.getElementById('btnTestFirebase');
 const testFirebaseResult = document.getElementById('testFirebaseResult');
+
+// Modal Panduan Pemasangan IoT
+const btnOpenIotGuide = document.getElementById('btnOpenIotGuide');
+const iotGuideModal = document.getElementById('iotGuideModal');
+const btnCloseIotGuideModal = document.getElementById('btnCloseIotGuideModal');
+const btnCloseIotGuideBottom = document.getElementById('btnCloseIotGuideBottom');
+const btnIotGuideToSettings = document.getElementById('btnIotGuideToSettings');
+const btnCopyPinout = document.getElementById('btnCopyPinout');
 
 let selectedFeedGrams = 25;
 let dataFetchTimer = null;
@@ -354,7 +367,7 @@ function updateTemperature(val) {
 }
 
 /**
- * Menghitung & Memperbarui status Kekeruhan Air (NTU)
+ * Menghitung & Memperbarui status Kekeruhan Air (%)
  */
 function updateTurbidity(val) {
   appState.currentTurbidity = Math.round(val);
@@ -541,7 +554,7 @@ async function dispenseFeed(grams, source = 'Manual') {
 
       let resData = null;
       let ok = false;
-      
+
       // Jika dibuka lewat web server HTTP/HTTPS, coba kirim ke backend PHP / Laravel
       if (window.location.protocol.startsWith('http')) {
         try {
@@ -676,6 +689,9 @@ function renderSchedules() {
   appState.schedules.sort((a, b) => a.time.localeCompare(b.time));
 
   appState.schedules.forEach(item => {
+    // Pastikan takaran pakan selalu bilangan bulat yang aman
+    item.grams = Math.max(5, Math.round(parseFloat(item.grams) || 25));
+
     const itemEl = document.createElement('div');
     itemEl.className = `schedule-item ${item.enabled ? '' : 'disabled'}`;
     itemEl.innerHTML = `
@@ -730,12 +746,14 @@ function updateNextScheduleBadge() {
     return;
   }
 
-  const upcoming = activeSchedules.find(s => s.time > currentHM);
+  // Urutkan jadwal aktif berdasarkan urutan jam
+  const sortedActive = [...activeSchedules].sort((a, b) => a.time.localeCompare(b.time));
+  const upcoming = sortedActive.find(s => s.time > currentHM);
   if (upcoming) {
     nextFeedScheduleBadgeEl.textContent = `${upcoming.time} (${upcoming.grams} gr)`;
   } else {
-    // Lewat semua hari ini, tampilkan yang pertama besok
-    nextFeedScheduleBadgeEl.textContent = `${activeSchedules[0].time} (${activeSchedules[0].grams} gr - Besok)`;
+    // Lewat semua hari ini, tampilkan jadwal yang paling awal besok
+    nextFeedScheduleBadgeEl.textContent = `${sortedActive[0].time} (${sortedActive[0].grams} gr - Besok)`;
   }
 }
 
@@ -772,7 +790,7 @@ function getWaterCondition(temp, turb) {
       dotClass: 'alert',
       pillClass: 'status-alert',
       statusLabel: 'Suhu Error',
-      desc: `Sensor DS18B20 tidak terdeteksi pada ESP32 (Kekeruhan: ${turb} NTU). Periksa kabel pin GPIO 4 dan resistor pull-up 4.7k ohm.`
+      desc: `Sensor DS18B20 tidak terdeteksi pada ESP32 (Kekeruhan: ${turb}%). Periksa kabel pin GPIO 4 dan resistor pull-up 4.7k ohm.`
     };
   }
 
@@ -783,7 +801,7 @@ function getWaterCondition(temp, turb) {
       dotClass: 'alert',
       pillClass: 'status-alert',
       statusLabel: 'Kritis / Waspada',
-      desc: `Suhu ${temp.toFixed(1)}°C dan kekeruhan ${turb} NTU berisiko bagi kesehatan ikan. Segera kuras atau sirkulasi air 30% dan tunda pemberian pakan berlebih.`
+      desc: `Suhu ${temp.toFixed(1)}°C dan kekeruhan ${turb}% berisiko bagi kesehatan ikan. Segera kuras atau sirkulasi air 30% dan tunda pemberian pakan berlebih.`
     };
   } else if (turb >= 25 || temp < 25 || temp > 30.5) {
     return {
@@ -792,7 +810,7 @@ function getWaterCondition(temp, turb) {
       dotClass: 'warn',
       pillClass: 'status-warn',
       statusLabel: 'Perlu Pantauan',
-      desc: `Parameter air berada di batas toleransi (Suhu: ${temp.toFixed(1)}°C, Kekeruhan: ${turb} NTU). Amati keaktifan ikan dan pastikan aerator kolam bekerja normal.`
+      desc: `Parameter air berada di batas toleransi (Suhu: ${temp.toFixed(1)}°C, Kekeruhan: ${turb}%). Amati keaktifan ikan dan pastikan aerator kolam bekerja normal.`
     };
   } else {
     return {
@@ -801,7 +819,7 @@ function getWaterCondition(temp, turb) {
       dotClass: '',
       pillClass: 'status-safe',
       statusLabel: 'Ideal & Aman',
-      desc: `Suhu air (${temp.toFixed(1)}°C) dan tingkat kekeruhan (${turb} NTU) berada pada rentang ideal budidaya. Ikan nyaman, sehat, dan dapat mengonsumsi pakan dengan lahap.`
+      desc: `Suhu air (${temp.toFixed(1)}°C) dan tingkat kekeruhan (${turb}%) berada pada rentang ideal budidaya. Ikan nyaman, sehat, dan dapat mengonsumsi pakan dengan lahap.`
     };
   }
 }
@@ -833,10 +851,10 @@ function renderWaterTextSummary() {
   }
 
   if (waterTurbSummaryText) {
-    let turbNote = 'Air Jernih & Bersih (< 25 NTU)';
-    if (turb > 50) turbNote = 'Keruh Pekat (> 50 NTU)';
-    else if (turb >= 25) turbNote = 'Mulai Sedikit Keruh (25 - 50 NTU)';
-    waterTurbSummaryText.innerHTML = `<strong>${turb} NTU</strong> — ${turbNote}`;
+    let turbNote = 'Air Jernih & Bersih (< 25%)';
+    if (turb > 50) turbNote = 'Keruh Pekat (> 50%)';
+    else if (turb >= 25) turbNote = 'Mulai Sedikit Keruh (25% - 50%)';
+    waterTurbSummaryText.innerHTML = `<strong>${turb}%</strong> — ${turbNote}`;
   }
 }
 
@@ -864,7 +882,7 @@ function renderWaterReadingsList() {
         <div class="reading-data">
           <span>Suhu: <strong>${tempDisplay}</strong></span>
           <span class="separator">•</span>
-          <span>Kekeruhan: <strong>${item.turb} NTU</strong></span>
+          <span>Kekeruhan: <strong>${item.turb}%</strong></span>
         </div>
       </div>
       <div class="reading-status-col">
@@ -1093,38 +1111,17 @@ function updateConnectionBadge(isOnline = true, timeNote = null) {
 // 12. EVENT LISTENERS
 // ========================================================
 function initEventListeners() {
-  // Preset Porsi Pakan
+  // Preset Porsi Pakan (10g, 25g, 50g, 100g)
   feedPresetBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       feedPresetBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedFeedGrams = parseInt(btn.dataset.grams);
-      customGramInput.value = selectedFeedGrams;
       const label = document.getElementById('dispenseGramsLabel');
       if (label && !isFeedOnCooldown()) {
         label.textContent = selectedFeedGrams;
       }
     });
-  });
-
-  // Input Gram Manual
-  customGramInput.addEventListener('input', (e) => {
-    let val = parseInt(e.target.value);
-    if (!isNaN(val) && val > 0) {
-      selectedFeedGrams = val;
-      const label = document.getElementById('dispenseGramsLabel');
-      if (label && !isFeedOnCooldown()) {
-        label.textContent = val;
-      }
-      // Lepas active di preset jika tidak pas
-      feedPresetBtns.forEach(b => {
-        if (parseInt(b.dataset.grams) === val) {
-          b.classList.add('active');
-        } else {
-          b.classList.remove('active');
-        }
-      });
-    }
   });
 
   // Tombol Keluarkan Pakan Manual
@@ -1191,10 +1188,25 @@ function initEventListeners() {
   // Simpan Jadwal Baru
   btnSaveSchedule.addEventListener('click', () => {
     const time = newScheduleTime.value;
-    const grams = parseInt(newScheduleGrams.value);
+    const grams = parseInt(newScheduleGrams.value, 10);
 
     if (!time || isNaN(grams) || grams <= 0) {
-      alert('Harap masukkan jam dan jumlah gram pakan yang valid!');
+      alert('Harap pilih jam dan takaran gram pakan yang valid!');
+      return;
+    }
+
+    // Cek apakah jadwal pada jam ini sudah ada sebelumnya
+    const existing = appState.schedules.find(s => s.time === time);
+    if (existing) {
+      if (confirm(`Jadwal untuk jam ${time} sudah terdaftar dengan porsi ${existing.grams} gram.\nApakah Anda ingin memperbarui takarannya menjadi ${grams} gram?`)) {
+        existing.grams = grams;
+        existing.enabled = true;
+        saveState();
+        renderSchedules();
+        updateNextScheduleBadge();
+        addScheduleBox.style.display = 'none';
+        btnToggleAddSchedule.textContent = '+ Tambah Jam';
+      }
       return;
     }
 
@@ -1241,6 +1253,72 @@ function initEventListeners() {
   if (btnTestFirebase) {
     btnTestFirebase.addEventListener('click', testFirebaseConnection);
   }
+
+  // Modal Panduan Pemasangan IoT
+  if (btnOpenIotGuide) {
+    btnOpenIotGuide.addEventListener('click', openIotGuideModal);
+  }
+  if (btnCloseIotGuideModal) {
+    btnCloseIotGuideModal.addEventListener('click', closeIotGuideModal);
+  }
+  if (btnCloseIotGuideBottom) {
+    btnCloseIotGuideBottom.addEventListener('click', closeIotGuideModal);
+  }
+  if (btnIotGuideToSettings) {
+    btnIotGuideToSettings.addEventListener('click', () => {
+      closeIotGuideModal();
+      openSettingsModal();
+    });
+  }
+  if (btnCopyPinout) {
+    btnCopyPinout.addEventListener('click', () => {
+      const pinoutText = 
+`[SKEMA PINOUT ESP32 - AMBAJAYA FISH]
+- Sensor Suhu DS18B20  : GPIO 4  (D4, Pull-Up 4.7k ke 3.3V)
+- Sensor Kekeruhan Air : GPIO 34 (ADC1 Analog)
+- Motor Servo Pakan    : GPIO 18 (PWM Signal)
+- HX711 Load Cell      : GPIO 16 (DOUT) & GPIO 17 (SCK)
+- Common Ground (GND)  : Hubungkan semua pin GND bersama`;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(pinoutText).then(() => {
+          const orig = btnCopyPinout.textContent;
+          btnCopyPinout.textContent = '✅ Tersalin!';
+          setTimeout(() => {
+            btnCopyPinout.textContent = orig;
+          }, 2000);
+        }).catch(() => {
+          alert(pinoutText);
+        });
+      } else {
+        alert(pinoutText);
+      }
+    });
+  }
+
+  // Klik di luar dialog (backdrop) untuk menutup modal
+  if (iotGuideModal) {
+    iotGuideModal.addEventListener('click', (e) => {
+      if (e.target === iotGuideModal) {
+        closeIotGuideModal();
+      }
+    });
+  }
+  if (settingsModal) {
+    settingsModal.addEventListener('click', (e) => {
+      if (e.target === settingsModal) {
+        closeSettingsModal();
+      }
+    });
+  }
+
+  // Tombol Escape di keyboard untuk menutup modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeIotGuideModal();
+      closeSettingsModal();
+    }
+  });
 }
 
 // ========================================================
@@ -1400,5 +1478,20 @@ async function testFirebaseConnection() {
       testFirebaseResult.style.color = '#b91c1c';
       testFirebaseResult.textContent = `❌ Koneksi gagal: ${err.message}. Pastikan koneksi internet aktif.`;
     }
+  }
+}
+
+// ========================================================
+// 14. PANDUAN PEMASANGAN PERANGKAT IOT (MODAL POPUP)
+// ========================================================
+function openIotGuideModal() {
+  if (iotGuideModal) {
+    iotGuideModal.style.display = 'flex';
+  }
+}
+
+function closeIotGuideModal() {
+  if (iotGuideModal) {
+    iotGuideModal.style.display = 'none';
   }
 }
