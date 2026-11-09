@@ -95,10 +95,43 @@ body {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  max-width: 400px;
-  width: 90%;
-  padding: 2.5rem 1.5rem;
+  max-width: 440px;
+  width: 92%;
+  padding: 2.25rem 1.5rem;
   animation: introPopIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.intro-video-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 1.35rem;
+  box-shadow: 0 16px 36px -6px rgba(2, 132, 199, 0.35), 0 6px 16px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(2, 132, 199, 0.35);
+  background-color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.intro-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.intro-video-glow {
+  position: absolute;
+  inset: -14px;
+  border-radius: calc(var(--radius-lg) + 8px);
+  background: radial-gradient(circle, rgba(2, 132, 199, 0.35) 0%, rgba(2, 132, 199, 0) 70%);
+  animation: introPulse 2.4s infinite ease-in-out;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .intro-logo-wrapper {

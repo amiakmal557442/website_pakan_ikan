@@ -212,6 +212,7 @@ const waterReadingsList = document.getElementById('waterReadingsList');
 
 // Layar Intro / Splash
 const introSplash = document.getElementById('introSplash');
+const introVideo = document.getElementById('introVideo');
 const introProgressBar = document.getElementById('introProgressBar');
 const introStatusText = document.getElementById('introStatusText');
 const introSkipBtn = document.getElementById('introSkipBtn');
@@ -295,6 +296,11 @@ document.addEventListener('DOMContentLoaded', () => {
 function dismissIntro() {
   if (introFinished || !introSplash) return;
   introFinished = true;
+  if (introVideo) {
+    try {
+      introVideo.pause();
+    } catch (e) {}
+  }
   introSplash.classList.add('fade-out');
   setTimeout(() => {
     introSplash.style.display = 'none';
@@ -303,6 +309,18 @@ function dismissIntro() {
 
 function initIntroSplash() {
   if (!introSplash) return;
+
+  // Jalankan video intro pembuka otomatis
+  if (introVideo) {
+    introVideo.play().catch(() => {
+      // Browser autoplay policy fallback
+    });
+
+    // Otomatis selesai dan masuk jika video telah tuntas diputar
+    introVideo.addEventListener('ended', () => {
+      dismissIntro();
+    });
+  }
 
   // Tombol lewati intro langsung ke website utama
   if (introSkipBtn) {
@@ -317,28 +335,29 @@ function initIntroSplash() {
     dismissIntro();
   });
 
-  // Animasi progress bar & pesan status pembuka (total ~1.8 detik)
+  // Animasi progress bar & pesan status pembuka (menyesuaikan durasi video ~3 detik)
   setTimeout(() => {
     if (introFinished) return;
     if (introProgressBar) introProgressBar.style.width = '35%';
-    if (introStatusText) introStatusText.textContent = 'Memeriksa sensor suhu & kekeruhan...';
-  }, 350);
+    if (introStatusText) introStatusText.textContent = 'Memeriksa sensor suhu & kekeruhan air...';
+  }, 700);
 
   setTimeout(() => {
     if (introFinished) return;
     if (introProgressBar) introProgressBar.style.width = '70%';
-    if (introStatusText) introStatusText.textContent = 'Menghubungkan kontrol pakan otomatis...';
-  }, 850);
+    if (introStatusText) introStatusText.textContent = 'Menghubungkan kontrol dispenser pakan otomatis...';
+  }, 1700);
 
   setTimeout(() => {
     if (introFinished) return;
     if (introProgressBar) introProgressBar.style.width = '100%';
     if (introStatusText) introStatusText.textContent = 'Sistem kolam siap digunakan!';
-  }, 1350);
+  }, 2700);
 
+  // Fallback timer maksimal 3.5 detik jika video tidak trigger event ended
   setTimeout(() => {
     dismissIntro();
-  }, 1850);
+  }, 3500);
 }
 
 // ========================================================
