@@ -131,25 +131,13 @@ const connectionTextEl = document.getElementById('connectionText');
 
 // Kontrol Pakan Cepat
 const feedPresetBtns = document.querySelectorAll('.feed-preset-btn');
-const customGramInput = document.getElementById('customGramInput');
 const btnDispenseFeed = document.getElementById('btnDispenseFeed');
-const dispenseGramsLabel = document.getElementById('dispenseGramsLabel');
 const feedActionProgress = document.getElementById('feedActionProgress');
 const feedActionStatusText = document.getElementById('feedActionStatusText');
 const feedCooldownBox = document.getElementById('feedCooldownBox');
 const cooldownLastTime = document.getElementById('cooldownLastTime');
 const cooldownTimerBadge = document.getElementById('cooldownTimerBadge');
 const btnResetCooldown = document.getElementById('btnResetCooldown');
-
-// Kalkulator
-const calcFishCount = document.getElementById('calcFishCount');
-const calcAvgWeight = document.getElementById('calcAvgWeight');
-const calcFeedingRate = document.getElementById('calcFeedingRate');
-const calcFrequency = document.getElementById('calcFrequency');
-const calcTotalBiomass = document.getElementById('calcTotalBiomass');
-const calcDailyNeed = document.getElementById('calcDailyNeed');
-const calcPerSession = document.getElementById('calcPerSession');
-const btnApplyTarget = document.getElementById('btnApplyTarget');
 
 // Jadwal
 const btnToggleAddSchedule = document.getElementById('btnToggleAddSchedule');
@@ -211,7 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
   renderWaterReadingsList();
   renderAllState();
   initEventListeners();
-  calculateFeedRecommendation();
   startSensorMonitoring();
 });
 
@@ -498,7 +485,7 @@ function updateFeedButtonCooldownUI() {
   } else {
     btnDispenseFeed.disabled = false;
     btnDispenseFeed.classList.remove('btn-cooldown');
-    btnDispenseFeed.innerHTML = `<span class="btn-icon">🚀</span> Keluarkan <span id="dispenseGramsLabel">${selectedFeedGrams}</span> Gram Pakan`;
+    btnDispenseFeed.innerHTML = `<span class="btn-icon">🚀</span> Keluarkan Pakan`;
 
     if (feedCooldownBox) {
       feedCooldownBox.style.display = 'none';
@@ -639,30 +626,7 @@ async function dispenseFeed(grams, source = 'Manual') {
 }
 
 // ========================================================
-// 8. KALKULATOR KEBUTUHAN PAKAN
-// ========================================================
-function calculateFeedRecommendation() {
-  const fishCount = parseInt(calcFishCount.value) || 0;
-  const avgWeight = parseFloat(calcAvgWeight.value) || 0; // gram
-  const feedRate = parseFloat(calcFeedingRate.value) || 0.03; // e.g. 0.03 = 3%
-  const frequency = parseInt(calcFrequency.value) || 3;
-
-  // Total biomassa dalam kilogram
-  const totalBiomassKg = (fishCount * avgWeight) / 1000;
-  // Total gram pakan per hari = Biomassa (gram) * feedRate
-  const totalDailyGrams = (fishCount * avgWeight) * feedRate;
-  // Porsi per sesi
-  const perSessionGrams = frequency > 0 ? (totalDailyGrams / frequency) : 0;
-
-  calcTotalBiomass.textContent = `${totalBiomassKg.toFixed(2)} kg`;
-  calcDailyNeed.textContent = `${Math.round(totalDailyGrams)} Gram/hari`;
-  calcPerSession.textContent = `${Math.round(perSessionGrams)} Gram/sesi`;
-
-  return Math.round(totalDailyGrams);
-}
-
-// ========================================================
-// 9. JADWAL PAKAN OTOMATIS
+// 8. JADWAL PAKAN OTOMATIS
 // ========================================================
 function renderSchedules() {
   scheduleListContainer.innerHTML = '';
@@ -1099,32 +1063,7 @@ function initEventListeners() {
       feedPresetBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedFeedGrams = parseInt(btn.dataset.grams);
-      customGramInput.value = selectedFeedGrams;
-      const label = document.getElementById('dispenseGramsLabel');
-      if (label && !isFeedOnCooldown()) {
-        label.textContent = selectedFeedGrams;
-      }
     });
-  });
-
-  // Input Gram Manual
-  customGramInput.addEventListener('input', (e) => {
-    let val = parseInt(e.target.value);
-    if (!isNaN(val) && val > 0) {
-      selectedFeedGrams = val;
-      const label = document.getElementById('dispenseGramsLabel');
-      if (label && !isFeedOnCooldown()) {
-        label.textContent = val;
-      }
-      // Lepas active di preset jika tidak pas
-      feedPresetBtns.forEach(b => {
-        if (parseInt(b.dataset.grams) === val) {
-          b.classList.add('active');
-        } else {
-          b.classList.remove('active');
-        }
-      });
-    }
   });
 
   // Tombol Keluarkan Pakan Manual
@@ -1160,21 +1099,6 @@ function initEventListeners() {
         alert(`Berhasil mengisi tabung pakan! Total pakan saat ini: ${appState.storageRemaining} gram.`);
       }
     }
-  });
-
-  // Input Kalkulator
-  [calcFishCount, calcAvgWeight, calcFeedingRate, calcFrequency].forEach(el => {
-    el.addEventListener('input', calculateFeedRecommendation);
-    el.addEventListener('change', calculateFeedRecommendation);
-  });
-
-  // Terapkan Target Pakan Harian dari Kalkulator
-  btnApplyTarget.addEventListener('click', () => {
-    const recGrams = calculateFeedRecommendation();
-    appState.feedTarget = recGrams;
-    saveState();
-    renderFeedMetrics();
-    alert(`Target pakan harian berhasil diperbarui menjadi ${recGrams} Gram/hari!`);
   });
 
   // Toggle Box Tambah Jadwal

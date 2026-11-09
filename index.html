@@ -196,22 +196,14 @@
             <p class="section-desc">Pilih jumlah pakan yang ingin dikeluarkan langsung ke kolam:</p>
             
             <div class="feed-options-grid">
-              <button class="feed-preset-btn" data-grams="10">10 Gram</button>
-              <button class="feed-preset-btn active" data-grams="25">25 Gram</button>
-              <button class="feed-preset-btn" data-grams="50">50 Gram</button>
-              <button class="feed-preset-btn" data-grams="100">100 Gram</button>
-            </div>
-
-            <div class="custom-gram-input">
-              <label for="customGramInput">Atau tentukan takaran manual (Gram):</label>
-              <div class="input-with-button">
-                <input type="number" id="customGramInput" min="5" max="300" value="25" placeholder="Contoh: 30">
-                <span class="input-unit">gram</span>
-              </div>
+              <button class="feed-preset-btn" data-grams="10">1 detik</button>
+              <button class="feed-preset-btn active" data-grams="25">2,5 detik</button>
+              <button class="feed-preset-btn" data-grams="50">5 detik</button>
+              <button class="feed-preset-btn" data-grams="100">10 detik</button>
             </div>
 
             <button class="btn btn-primary btn-block btn-feed" id="btnDispenseFeed">
-              <span class="btn-icon">🚀</span> Keluarkan <span id="dispenseGramsLabel">25</span> Gram Pakan
+              <span class="btn-icon">🚀</span> Keluarkan Pakan
             </button>
 
             <!-- Box Indikator Jeda Pakan 5 Jam -->
@@ -238,65 +230,6 @@
               <div class="spinner"></div>
               <span id="feedActionStatusText">Motor Servo berputar mengeluarkan pakan...</span>
             </div>
-          </div>
-        </section>
-
-        <!-- Panel Kalkulator Kebutuhan Pakan -->
-        <section class="card panel-card">
-          <div class="card-header">
-            <h3>Kalkulator Kebutuhan Pakan</h3>
-            <span class="badge">Rekomendasi</span>
-          </div>
-          <div class="card-body">
-            <p class="section-desc">Hitung dosis pakan harian berdasarkan biomassa & jumlah populasi ikan di kolam:</p>
-            
-            <div class="calc-form-grid">
-              <div class="form-group">
-                <label for="calcFishCount">Jumlah Ikan (Ekor)</label>
-                <input type="number" id="calcFishCount" value="100" min="1">
-              </div>
-              <div class="form-group">
-                <label for="calcAvgWeight">Rata-rata Berat Ikan (Gram/ekor)</label>
-                <input type="number" id="calcAvgWeight" value="50" min="5">
-              </div>
-              <div class="form-group">
-                <label for="calcFeedingRate">Persentase Pakan (% Bobot Tubuh)</label>
-                <select id="calcFeedingRate">
-                  <option value="0.02">2% (Perawatan / Air Dingin)</option>
-                  <option value="0.03" selected>3% (Standar / Ikan Dewasa)</option>
-                  <option value="0.04">4% (Pertumbuhan Cepat)</option>
-                  <option value="0.05">5% (Bibit / Benih Ikan)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="calcFrequency">Frekuensi Makan Sehari</label>
-                <select id="calcFrequency">
-                  <option value="2">2 Kali Sehari</option>
-                  <option value="3" selected>3 Kali Sehari</option>
-                  <option value="4">4 Kali Sehari</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Hasil Perhitungan -->
-            <div class="calc-results-box">
-              <div class="calc-result-item">
-                <span class="calc-lbl">Total Biomassa Ikan:</span>
-                <span class="calc-val" id="calcTotalBiomass">5.00 kg</span>
-              </div>
-              <div class="calc-result-item highlight">
-                <span class="calc-lbl">Total Kebutuhan Harian:</span>
-                <span class="calc-val" id="calcDailyNeed">150 Gram/hari</span>
-              </div>
-              <div class="calc-result-item">
-                <span class="calc-lbl">Takaran Per Jadwal:</span>
-                <span class="calc-val" id="calcPerSession">50 Gram/sesi</span>
-              </div>
-            </div>
-
-            <button class="btn btn-secondary btn-block" id="btnApplyTarget">
-              Gunakan sebagai Target Pakan Harian
-            </button>
           </div>
         </section>
 
