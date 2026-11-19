@@ -88,26 +88,12 @@
       </div>
     </section>
 
-    <!-- Banner Seleksi & Kontrol Tipe Ikan -->
+    <!-- Banner Seleksi & Kontrol Tipe Ikan (Tampilan Ringkas: Hanya Tombol) -->
     <section class="overview-banner fish-selector-banner">
-      <div class="fish-selector-main">
-        <div class="fish-selector-text">
-          <div class="fish-selector-badge">🏷️ Tipe Ikan Aktif</div>
-          <h3 id="currentFishHeading">🐠 Ikan Koki (Mas Koki)</h3>
-          <p id="currentFishDescription" class="fish-desc-text">
-            Suhu Ideal: <strong>20 - 24 °C</strong> | Kekeruhan Maks: <strong>&lt; 25%</strong> | Porsi Pakan: <strong>Pelet mudah cerna 25g, 2-3x sehari</strong>
-          </p>
-        </div>
-        <div class="fish-action-buttons">
-          <button type="button" class="btn btn-primary" id="btnOpenFishModal">
-            ✨ Kelola / Tambah Tipe Ikan
-          </button>
-        </div>
-      </div>
       <div class="fish-quick-buttons-row">
-        <span class="fish-quick-label">Pilih Ikan:</span>
+        <span class="fish-quick-label">🏷️ Pilih Tipe Ikan:</span>
         <div class="fish-pill-buttons" id="fishPillButtonsContainer">
-          <!-- Tombol Koki, Guppy, Ikan Mas di-render via JavaScript -->
+          <!-- Tombol Koki, Guppy, Ikan Mas, dan + Tambah Tipe Ikan di-render via JavaScript -->
         </div>
       </div>
     </section>
@@ -249,8 +235,7 @@
             <span class="badge">Dispenser Servo</span>
           </div>
           <div class="card-body">
-            <p class="section-desc">Pilih jumlah pakan yang ingin dikeluarkan langsung ke kolam (setiap 5gram bernilai
-              0,5 ms)</p>
+            <p class="section-desc">Pilih durasi pergerakan aktuator servo untuk mengeluarkan pakan langsung ke kolam</p>
 
             <div class="feed-options-grid">
               <button class="feed-preset-btn" data-grams="10">1 detik</button>
@@ -304,12 +289,11 @@
               <h4>Tambah Jadwal Baru</h4>
               <div class="schedule-inputs">
                 <input type="time" id="newScheduleTime" value="12:00">
-                <select id="newScheduleGrams" class="schedule-grams-select" title="Pilih Takaran Pakan">
-                  <option value="5">5 Gram (Porsi Mikro)</option>
-                  <option value="10">10 Gram (Porsi Kecil)</option>
-                  <option value="25" selected>25 Gram (Porsi Sedang)</option>
-                  <option value="50">50 Gram (Porsi Besar)</option>
-                  <option value="100">100 Gram (Porsi Ekstra)</option>
+                <select id="newScheduleGrams" class="schedule-grams-select" title="Pilih Durasi Pakan">
+                  <option value="10">1 detik (Porsi Kecil)</option>
+                  <option value="25" selected>2,5 detik (Porsi Sedang)</option>
+                  <option value="50">5 detik (Porsi Besar)</option>
+                  <option value="100">10 detik (Porsi Ekstra)</option>
                 </select>
                 <button class="btn btn-primary btn-sm" id="btnSaveSchedule">Simpan</button>
               </div>

@@ -72,7 +72,7 @@ const DEFAULT_STATE = {
       tempMin: 20,
       tempMax: 24,
       turbidityMax: 25,
-      feedDesc: 'Pelet mudah cerna 25g, 2-3x sehari (lambat tenggelam)',
+      feedDesc: 'Pelet mudah cerna 2,5 detik (25g), 2-3x sehari (lambat tenggelam)',
       desc: 'Ikan mas koki bertubuh bulat dengan nafsu makan besar. Membutuhkan air sejuk, filtrasi bersih, dan aerasi kaya oksigen.'
     },
     {
@@ -84,7 +84,7 @@ const DEFAULT_STATE = {
       tempMin: 24,
       tempMax: 28,
       turbidityMax: 30,
-      feedDesc: 'Pelet mikro / flake halus (5g-10g), 2x sehari',
+      feedDesc: 'Pelet mikro / flake halus 1 detik (10g), 2x sehari',
       desc: 'Ikan hias mungil yang berenang lincah di permukaan air. Menyukai air tropis bersuhu hangat stabil dan arus tenang.'
     },
     {
@@ -96,7 +96,7 @@ const DEFAULT_STATE = {
       tempMin: 25,
       tempMax: 30,
       turbidityMax: 40,
-      feedDesc: 'Pelet standar apung/tenggelam (25g-50g), 3x sehari',
+      feedDesc: 'Pelet standar 2,5 - 5 detik (25g-50g), 3x sehari',
       desc: 'Ikan omnivora yang tangguh dan rakus di semua lapisan kolam. Mampu beradaptasi dengan variasi suhu dan kekeruhan air yang lebih luas.'
     }
   ],
@@ -632,7 +632,7 @@ async function dispenseFeed(grams, source = 'Manual') {
   // Tampilkan loading / status servo
   feedActionProgress.style.display = 'flex';
   btnDispenseFeed.disabled = true;
-  feedActionStatusText.textContent = `Mengeluarkan ${grams} gram pakan (${source})...`;
+  feedActionStatusText.textContent = `Mengeluarkan pakan (${formatFeedDuration(grams)}, ${source})...`;
 
   let success = false;
 
@@ -731,7 +731,7 @@ async function dispenseFeed(grams, source = 'Manual') {
     saveState();
     renderFeedMetrics();
 
-    feedActionStatusText.textContent = `Berhasil! ${grams} gram pakan telah dituangkan.`;
+    feedActionStatusText.textContent = `Berhasil! Pakan telah dituangkan (${formatFeedDuration(grams)}).`;
     setTimeout(() => {
       feedActionProgress.style.display = 'none';
       updateFeedButtonCooldownUI();
@@ -748,6 +748,20 @@ async function dispenseFeed(grams, source = 'Manual') {
 // ========================================================
 // 8. JADWAL PAKAN OTOMATIS
 // ========================================================
+
+/**
+ * Konversi takaran gram ke format durasi waktu aktuator servo (detik)
+ * 10g = 1 detik, 25g = 2,5 detik, 50g = 5 detik, 100g = 10 detik
+ */
+function formatFeedDuration(grams) {
+  const g = parseFloat(grams) || 25;
+  if (g >= 5) {
+    const sec = g / 10;
+    return `${sec.toString().replace('.', ',')} detik`;
+  }
+  return `${g.toString().replace('.', ',')} detik`;
+}
+
 function renderSchedules() {
   scheduleListContainer.innerHTML = '';
 
@@ -768,7 +782,7 @@ function renderSchedules() {
     itemEl.innerHTML = `
       <div class="schedule-left">
         <span class="schedule-time">${item.time}</span>
-        <span class="schedule-grams">Takaran: <strong>${item.grams} gram</strong></span>
+        <span class="schedule-grams">Durasi: <strong>${formatFeedDuration(item.grams)}</strong></span>
       </div>
       <div class="schedule-actions">
         <label class="switch" title="${item.enabled ? 'Nonaktifkan' : 'Aktifkan'}">
@@ -821,10 +835,10 @@ function updateNextScheduleBadge() {
   const sortedActive = [...activeSchedules].sort((a, b) => a.time.localeCompare(b.time));
   const upcoming = sortedActive.find(s => s.time > currentHM);
   if (upcoming) {
-    nextFeedScheduleBadgeEl.textContent = `${upcoming.time} (${upcoming.grams} gr)`;
+    nextFeedScheduleBadgeEl.textContent = `${upcoming.time} (${formatFeedDuration(upcoming.grams)})`;
   } else {
     // Lewat semua hari ini, tampilkan jadwal yang paling awal besok
-    nextFeedScheduleBadgeEl.textContent = `${sortedActive[0].time} (${sortedActive[0].grams} gr - Besok)`;
+    nextFeedScheduleBadgeEl.textContent = `${sortedActive[0].time} (${formatFeedDuration(sortedActive[0].grams)} - Besok)`;
   }
 }
 
@@ -1252,14 +1266,14 @@ function initEventListeners() {
     const grams = parseInt(newScheduleGrams.value, 10);
 
     if (!time || isNaN(grams) || grams <= 0) {
-      alert('Harap pilih jam dan takaran gram pakan yang valid!');
+      alert('Harap pilih jam dan durasi pakan yang valid!');
       return;
     }
 
     // Cek apakah jadwal pada jam ini sudah ada sebelumnya
     const existing = appState.schedules.find(s => s.time === time);
     if (existing) {
-      if (confirm(`Jadwal untuk jam ${time} sudah terdaftar dengan porsi ${existing.grams} gram.\nApakah Anda ingin memperbarui takarannya menjadi ${grams} gram?`)) {
+      if (confirm(`Jadwal untuk jam ${time} sudah terdaftar dengan durasi ${formatFeedDuration(existing.grams)}.\nApakah Anda ingin memperbarui durasinya menjadi ${formatFeedDuration(grams)}?`)) {
         existing.grams = grams;
         existing.enabled = true;
         saveState();
