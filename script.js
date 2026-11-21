@@ -272,6 +272,30 @@ const tempLabelCold = document.getElementById('tempLabelCold');
 const tempLabelIdeal = document.getElementById('tempLabelIdeal');
 const tempLabelWarm = document.getElementById('tempLabelWarm');
 
+// Switch Tema Latar Hitam / Putih
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+const themeToggleText = document.getElementById('themeToggleText');
+
+// Komponen Diagram Perbandingan Pakan
+const tabFeedBarChart = document.getElementById('tabFeedBarChart');
+const tabFeedDonutChart = document.getElementById('tabFeedDonutChart');
+const feedBarChartView = document.getElementById('feedBarChartView');
+const feedDonutChartView = document.getElementById('feedDonutChartView');
+const feedBarsContainer = document.getElementById('feedBarsContainer');
+const chartFeedTodayVal = document.getElementById('chartFeedTodayVal');
+const chartFeedTodayGram = document.getElementById('chartFeedTodayGram');
+const chartFeedTargetVal = document.getElementById('chartFeedTargetVal');
+const chartFeedTargetGram = document.getElementById('chartFeedTargetGram');
+const chartFeedPercentVal = document.getElementById('chartFeedPercentVal');
+const chartFeedRemainingVal = document.getElementById('chartFeedRemainingVal');
+const donutProgressRing = document.getElementById('donutProgressRing');
+const donutPercentText = document.getElementById('donutPercentText');
+const donutDoneText = document.getElementById('donutDoneText');
+const donutRemainText = document.getElementById('donutRemainText');
+const donutStorageText = document.getElementById('donutStorageText');
+const feedChartFooterNote = document.getElementById('feedChartFooterNote');
+let currentFeedChartTab = 'bar';
+
 let selectedFeedGrams = 25;
 let dataFetchTimer = null;
 let lastTriggeredScheduleMinute = '';
@@ -281,11 +305,14 @@ let lastWaterLogTime = 0;
 // 3. INISIALISASI APLIKASI
 // ========================================================
 document.addEventListener('DOMContentLoaded', () => {
+  initThemeToggle();
   initIntroSplash();
   initDateTime();
+  initFeedChartTabs();
   renderWaterTextSummary();
   renderWaterReadingsList();
   renderAllState();
+  renderFeedChart();
   initEventListeners();
   startSensorMonitoring();
 });
@@ -532,6 +559,9 @@ function renderFeedMetrics() {
     storageStatusEl.textContent = `Kapasitas ${storagePercent}%`;
     storageBarEl.style.backgroundColor = '#0c8599';
   }
+
+  // Perbarui Diagram Perbandingan Pakan
+  renderFeedChart();
 }
 
 // ========================================================
@@ -1824,4 +1854,187 @@ function saveNewFishType() {
   renderSensors();
   renderWaterTextSummary();
   alert(`Berhasil menambahkan tipe ikan "${name}" dan mengaktifkannya!`);
+}
+
+// ========================================================
+// 14. SWITCH TEMA LATAR HITAM & PUTIH (DARK / LIGHT MODE)
+// ========================================================
+function initThemeToggle() {
+  let isDark = false;
+  try {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') {
+      isDark = true;
+    } else if (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      isDark = true;
+    }
+  } catch (e) {}
+
+  applyTheme(isDark);
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      const currentDark = document.body.classList.contains('dark-theme');
+      applyTheme(!currentDark);
+    });
+  }
+}
+
+function applyTheme(isDark) {
+  if (isDark) {
+    document.documentElement.classList.add('dark-theme');
+    document.body.classList.add('dark-theme');
+    if (themeToggleText) themeToggleText.textContent = 'Latar Putih';
+    try { localStorage.setItem('theme', 'dark'); } catch (e) {}
+  } else {
+    document.documentElement.classList.remove('dark-theme');
+    document.body.classList.remove('dark-theme');
+    if (themeToggleText) themeToggleText.textContent = 'Latar Hitam';
+    try { localStorage.setItem('theme', 'light'); } catch (e) {}
+  }
+
+  // Refresh tampilan chart agar sinkron dengan tema aktif
+  renderFeedChart();
+}
+
+// ========================================================
+// 15. DIAGRAM PERBANDINGAN PAKAN (CHART)
+// ========================================================
+function initFeedChartTabs() {
+  if (tabFeedBarChart && tabFeedDonutChart) {
+    tabFeedBarChart.addEventListener('click', () => {
+      currentFeedChartTab = 'bar';
+      tabFeedBarChart.classList.add('active');
+      tabFeedDonutChart.classList.remove('active');
+      if (feedBarChartView) feedBarChartView.style.display = 'block';
+      if (feedDonutChartView) feedDonutChartView.style.display = 'none';
+      renderFeedChart();
+    });
+
+    tabFeedDonutChart.addEventListener('click', () => {
+      currentFeedChartTab = 'donut';
+      tabFeedDonutChart.classList.add('active');
+      tabFeedBarChart.classList.remove('active');
+      if (feedBarChartView) feedBarChartView.style.display = 'none';
+      if (feedDonutChartView) feedDonutChartView.style.display = 'block';
+      renderFeedChart();
+    });
+  }
+}
+
+function renderFeedChart() {
+  if (!chartFeedTodayVal) return;
+
+  const todayGrams = Math.max(0, appState.feedToday || 0);
+  const targetGrams = Math.max(10, appState.feedTarget || 200);
+  const todaySeconds = (todayGrams / 10).toFixed(1).replace('.0', '').replace('.', ',');
+  const targetSeconds = (targetGrams / 10).toFixed(1).replace('.0', '').replace('.', ',');
+
+  const percent = Math.min(100, Math.round((todayGrams / targetGrams) * 100));
+  const remainingGrams = Math.max(0, targetGrams - todayGrams);
+  const remainingSeconds = (remainingGrams / 10).toFixed(1).replace('.0', '').replace('.', ',');
+
+  // Update Statistik Angka
+  if (chartFeedTodayVal) chartFeedTodayVal.textContent = `${todaySeconds} detik`;
+  if (chartFeedTodayGram) chartFeedTodayGram.textContent = `(~${todayGrams} gram)`;
+  if (chartFeedTargetVal) chartFeedTargetVal.textContent = `${targetSeconds} detik`;
+  if (chartFeedTargetGram) chartFeedTargetGram.textContent = `(~${targetGrams} gram)`;
+  if (chartFeedPercentVal) chartFeedPercentVal.textContent = `${percent}%`;
+  if (chartFeedRemainingVal) {
+    chartFeedRemainingVal.textContent = remainingGrams > 0 ? `Sisa: ${remainingSeconds} detik` : 'Target Tercapai! 🎉';
+  }
+
+  // Render Diagram Batang Sesi
+  if (feedBarsContainer) {
+    feedBarsContainer.innerHTML = '';
+
+    const sessions = [];
+    if (Array.isArray(appState.schedules)) {
+      appState.schedules.forEach((sch) => {
+        let name = 'Jadwal Rutin';
+        let barColor = 'bar-color-morning';
+        const hour = parseInt((sch.time || '12:00').split(':')[0], 10);
+        if (hour < 11) {
+          name = 'Sesi Pagi';
+          barColor = 'bar-color-morning';
+        } else if (hour < 15) {
+          name = 'Sesi Siang';
+          barColor = 'bar-color-afternoon';
+        } else {
+          name = 'Sesi Sore';
+          barColor = 'bar-color-evening';
+        }
+
+        sessions.push({
+          time: sch.time,
+          name: name,
+          grams: sch.grams,
+          colorClass: barColor
+        });
+      });
+    }
+
+    // Tambahkan sesi manual jika pernah diberikan hari ini
+    if (appState.feedCountToday > 0) {
+      sessions.push({
+        time: 'Manual',
+        name: 'Dispenser Manual',
+        grams: selectedFeedGrams || 25,
+        colorClass: 'bar-color-manual'
+      });
+    }
+
+    if (sessions.length === 0) {
+      feedBarsContainer.innerHTML = '<p class="section-desc" style="text-align:center; padding:1rem 0;">Belum ada jadwal pakan terdaftar.</p>';
+    } else {
+      const maxGrams = Math.max(50, ...sessions.map(s => s.grams));
+
+      sessions.forEach(session => {
+        const secVal = (session.grams / 10).toFixed(1).replace('.0', '').replace('.', ',');
+        const barPercent = Math.min(100, Math.max(12, Math.round((session.grams / maxGrams) * 100)));
+
+        const row = document.createElement('div');
+        row.className = 'feed-bar-row';
+        row.innerHTML = `
+          <div class="feed-bar-header">
+            <span class="feed-bar-time">
+              <span class="legend-color-box ${session.colorClass}"></span>
+              <strong>${session.time}</strong> — ${session.name}
+            </span>
+            <span class="feed-bar-val"><strong>${secVal} detik</strong> (${session.grams}g)</span>
+          </div>
+          <div class="feed-bar-track">
+            <div class="feed-bar-fill ${session.colorClass}" style="width: ${barPercent}%;"></div>
+          </div>
+        `;
+        feedBarsContainer.appendChild(row);
+      });
+    }
+  }
+
+  // Render Diagram Donut (SVG Progress Ring)
+  if (donutProgressRing) {
+    const circumference = 389.56; // 2 * pi * 62
+    const offset = circumference - (circumference * percent / 100);
+    donutProgressRing.style.strokeDashoffset = offset;
+  }
+  if (donutPercentText) donutPercentText.textContent = `${percent}%`;
+  if (donutDoneText) donutDoneText.textContent = `${todaySeconds} detik (${todayGrams} gr)`;
+  if (donutRemainText) donutRemainText.textContent = `${remainingSeconds} detik (${remainingGrams} gr)`;
+  if (donutStorageText) {
+    const storagePercent = Math.max(0, Math.round((appState.storageRemaining / appState.storageCapacity) * 100));
+    donutStorageText.textContent = `${appState.storageRemaining} gr (${storagePercent}%)`;
+  }
+
+  // Keterangan Cerdas Rekomendasi
+  if (feedChartFooterNote) {
+    const activeFish = getActiveFish();
+    if (percent >= 100) {
+      feedChartFooterNote.innerHTML = `✅ <span>Target pakan harian <strong>${activeFish.name}</strong> telah terpenuhi (${todaySeconds} detik). Jaga kolam tetap bersih dari sisa pakan.</span>`;
+    } else if (percent >= 50) {
+      feedChartFooterNote.innerHTML = `💡 <span>Konsumsi pakan <strong>${activeFish.name}</strong> berjalan baik (${percent}%). Tersisa <strong>${remainingSeconds} detik</strong> untuk sesi berikutnya.</span>`;
+    } else {
+      feedChartFooterNote.innerHTML = `🌾 <span>Kebutuhan harian <strong>${activeFish.name}</strong> baru terpenuhi ${percent}%. Pastikan dispenser berjalan sesuai jadwal otomatis.</span>`;
+    }
+  }
 }

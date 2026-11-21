@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 
 <head>
@@ -11,6 +11,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script>
+    // Deteksi tema latar hitam/putih tersimpan sebelum rendering agar tidak ada kedipan
+    (function () {
+      try {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark-theme');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 
 <body>
@@ -54,6 +65,17 @@
       </div>
 
       <div class="header-actions">
+        <!-- Switch Latar Hitam dan Putih (Dark / Light Theme Toggle) -->
+        <button class="theme-toggle-btn" id="themeToggleBtn" type="button" aria-label="Ganti Latar Gelap / Terang" title="Beralih Tema Latar Hitam / Putih">
+          <span class="theme-toggle-track">
+            <span class="theme-toggle-thumb">
+              <span class="theme-icon-sun">☀️</span>
+              <span class="theme-icon-moon">🌙</span>
+            </span>
+          </span>
+          <span class="theme-toggle-text" id="themeToggleText">Latar Hitam</span>
+        </button>
+
         <!-- Status Koneksi -->
         <div class="connection-status" id="connectionBadge">
           <span class="status-dot online"></span>
@@ -363,6 +385,99 @@
               <div class="water-readings-list" id="waterReadingsList">
                 <!-- Diisi secara dinamis via JavaScript -->
               </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Panel Diagram Perbandingan Pakan -->
+        <section class="card panel-card" id="cardFeedChart">
+          <div class="card-header">
+            <div>
+              <h3>Diagram Perbandingan Pakan</h3>
+              <p class="card-subhead">Visualisasi perbandingan konsumsi pakan, target harian &amp; distribusi per sesi</p>
+            </div>
+            <div class="chart-tab-group">
+              <button type="button" class="chart-tab-btn active" id="tabFeedBarChart" title="Tampilan Diagram Batang">📊 Batang</button>
+              <button type="button" class="chart-tab-btn" id="tabFeedDonutChart" title="Tampilan Diagram Donut">🍩 Donut</button>
+            </div>
+          </div>
+          <div class="card-body">
+
+            <!-- Ringkasan Statistik Angka Perbandingan -->
+            <div class="feed-chart-stats-grid">
+              <div class="chart-stat-item">
+                <span class="chart-stat-label">Pakan Dikeluarkan</span>
+                <span class="chart-stat-value text-primary" id="chartFeedTodayVal">12 detik</span>
+                <small class="chart-stat-sub" id="chartFeedTodayGram">(~120 gram)</small>
+              </div>
+              <div class="chart-stat-item">
+                <span class="chart-stat-label">Target Harian</span>
+                <span class="chart-stat-value" id="chartFeedTargetVal">20 detik</span>
+                <small class="chart-stat-sub" id="chartFeedTargetGram">(~200 gram)</small>
+              </div>
+              <div class="chart-stat-item">
+                <span class="chart-stat-label">Ketercapaian</span>
+                <span class="chart-stat-value text-success" id="chartFeedPercentVal">60%</span>
+                <small class="chart-stat-sub" id="chartFeedRemainingVal">Sisa: 8 detik</small>
+              </div>
+            </div>
+
+            <!-- Tampilan 1: Diagram Batang (Distribusi Porsi per Sesi) -->
+            <div class="feed-chart-view" id="feedBarChartView">
+              <div class="feed-bars-container" id="feedBarsContainer">
+                <!-- Di-render dinamis via JS -->
+              </div>
+              <div class="feed-chart-legend">
+                <span class="legend-chip"><span class="legend-color-box bar-color-morning"></span> Pagi</span>
+                <span class="legend-chip"><span class="legend-color-box bar-color-afternoon"></span> Siang</span>
+                <span class="legend-chip"><span class="legend-color-box bar-color-evening"></span> Sore</span>
+                <span class="legend-chip"><span class="legend-color-box bar-color-manual"></span> Manual</span>
+              </div>
+            </div>
+
+            <!-- Tampilan 2: Diagram Lingkaran / Donut (Realisasi vs Target) -->
+            <div class="feed-chart-view" id="feedDonutChartView" style="display: none;">
+              <div class="donut-chart-container">
+                <div class="donut-svg-wrapper">
+                  <svg class="donut-svg" viewBox="0 0 160 160">
+                    <circle class="donut-bg-ring" cx="80" cy="80" r="62" />
+                    <circle class="donut-progress-ring" id="donutProgressRing" cx="80" cy="80" r="62" stroke-dasharray="389.5" stroke-dashoffset="155.8" />
+                  </svg>
+                  <div class="donut-center-content">
+                    <span class="donut-percent" id="donutPercentText">60%</span>
+                    <span class="donut-label">Tercapai</span>
+                  </div>
+                </div>
+                <div class="donut-details">
+                  <div class="donut-detail-item">
+                    <span class="donut-indicator ring-color-done"></span>
+                    <div>
+                      <strong>Pakan Dikeluarkan:</strong>
+                      <span id="donutDoneText">12 detik (120 gr)</span>
+                    </div>
+                  </div>
+                  <div class="donut-detail-item">
+                    <span class="donut-indicator ring-color-remain"></span>
+                    <div>
+                      <strong>Sisa Menuju Target:</strong>
+                      <span id="donutRemainText">8 detik (80 gr)</span>
+                    </div>
+                  </div>
+                  <div class="donut-detail-item">
+                    <span class="donut-indicator ring-color-storage"></span>
+                    <div>
+                      <strong>Sisa Stok Tabung:</strong>
+                      <span id="donutStorageText">880 gr (88%)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Catatan Keterangan Cerdas Rekomendasi Pakan -->
+            <div class="feed-chart-footer-note" id="feedChartFooterNote">
+              💡 <span>Perbandingan konsumsi pakan ikan berada pada tingkat yang stabil sesuai jadwal.</span>
             </div>
 
           </div>

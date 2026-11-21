@@ -40,6 +40,29 @@
   --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
+/* Tema Latar Hitam (Dark Theme Mode) */
+html.dark-theme,
+body.dark-theme {
+  --bg-main: #0b1120;
+  --bg-card: #131c31;
+  --bg-subtle: #1e293b;
+  
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
+
+  --border: #1f2d47;
+  --border-focus: #38bdf8;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+
+  --primary-light: rgba(2, 132, 199, 0.22);
+  --success-light: rgba(22, 163, 74, 0.22);
+  --warning-light: rgba(217, 119, 6, 0.22);
+  --danger-light: rgba(220, 38, 38, 0.22);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -52,6 +75,7 @@ body {
   color: var(--text-main);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* Container Wrapper */
@@ -1814,3 +1838,598 @@ input:checked + .slider:before {
     grid-template-columns: 1fr;
   }
 }
+
+/* ========================================================
+   SWITCH LATAR HITAM & PUTIH (THEME TOGGLE)
+   ======================================================== */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.825rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+  user-select: none;
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.theme-toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+  transition: background-color 0.25s ease;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.theme-icon-sun {
+  display: block;
+}
+
+.theme-icon-moon {
+  display: none;
+}
+
+/* Penyesuaian saat mode latar hitam aktif */
+body.dark-theme .theme-toggle-track,
+html.dark-theme .theme-toggle-track {
+  background-color: #0284c7;
+}
+
+body.dark-theme .theme-toggle-thumb,
+html.dark-theme .theme-toggle-thumb {
+  transform: translateX(16px);
+  background-color: #0b1120;
+}
+
+body.dark-theme .theme-icon-sun,
+html.dark-theme .theme-icon-sun {
+  display: none;
+}
+
+body.dark-theme .theme-icon-moon,
+html.dark-theme .theme-icon-moon {
+  display: block;
+}
+
+/* ========================================================
+   OVERRIDE ELEMEN MODE LATAR HITAM (DARK THEME)
+   ======================================================== */
+body.dark-theme .app-header {
+  background-color: #131c31;
+  border-bottom-color: #1f2d47;
+}
+
+body.dark-theme .brand-title {
+  color: #38bdf8;
+}
+
+body.dark-theme .overview-banner {
+  background: #131c31;
+  border-color: #1f2d47;
+}
+
+body.dark-theme .fish-selector-banner {
+  background: linear-gradient(135deg, #131c31 0%, #0d2818 100%);
+  border-color: #1b4d2e;
+}
+
+body.dark-theme .fish-quick-label {
+  color: #4ade80;
+}
+
+body.dark-theme .fish-pill-btn {
+  background-color: #1e293b;
+  border-color: #2e3e5c;
+  color: #f1f5f9;
+}
+
+body.dark-theme .fish-pill-btn:hover {
+  background-color: #243450;
+  border-color: #16a34a;
+  color: #4ade80;
+}
+
+body.dark-theme .fish-pill-btn.active {
+  background-color: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+}
+
+body.dark-theme .fish-pill-btn-add {
+  border-color: #38bdf8;
+  color: #38bdf8;
+  background-color: transparent;
+}
+
+body.dark-theme .fish-pill-btn-add:hover {
+  background-color: rgba(56, 189, 248, 0.15);
+}
+
+body.dark-theme .quick-pill {
+  background-color: #1e293b;
+  border-color: #2e3e5c;
+  color: #f1f5f9;
+}
+
+body.dark-theme .quick-pill .pill-value {
+  color: #38bdf8;
+}
+
+body.dark-theme .metric-card {
+  background-color: #131c31;
+  border-color: #1f2d47;
+}
+
+body.dark-theme .metric-title {
+  color: #94a3b8;
+}
+
+body.dark-theme .range-bar-container {
+  background-color: #1e293b;
+}
+
+body.dark-theme .card-header {
+  background-color: #17233d;
+  border-bottom-color: #1f2d47;
+}
+
+body.dark-theme .card-header h3 {
+  color: #f8fafc;
+}
+
+body.dark-theme .feed-preset-btn {
+  background-color: #1e293b;
+  border-color: #2e3e5c;
+  color: #f1f5f9;
+}
+
+body.dark-theme .feed-preset-btn:hover {
+  background-color: #243450;
+  border-color: #0284c7;
+  color: #38bdf8;
+}
+
+body.dark-theme .feed-preset-btn.active {
+  background-color: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+}
+
+body.dark-theme .schedule-item {
+  background-color: #1e293b;
+  border-color: #2e3e5c;
+}
+
+body.dark-theme .schedule-time {
+  color: #f8fafc;
+}
+
+body.dark-theme .water-text-summary-box {
+  background-color: #17233d;
+  border-color: #2e3e5c;
+}
+
+body.dark-theme .water-text-summary-box h4 {
+  color: #f8fafc;
+}
+
+body.dark-theme .reading-text-row {
+  border-bottom-color: #1f2d47;
+}
+
+body.dark-theme .reading-text-row:hover {
+  background-color: rgba(30, 41, 59, 0.6);
+}
+
+body.dark-theme .input-with-button input,
+body.dark-theme .form-group input,
+body.dark-theme .form-group select,
+body.dark-theme .schedule-inputs input,
+body.dark-theme .schedule-inputs select {
+  background-color: #1e293b;
+  border-color: #2e3e5c;
+  color: #f8fafc;
+}
+
+body.dark-theme .modal-dialog {
+  background-color: #131c31;
+  border-color: #1f2d47;
+  color: #f8fafc;
+}
+
+body.dark-theme .modal-header {
+  border-bottom-color: #1f2d47;
+}
+
+body.dark-theme .modal-footer {
+  border-top-color: #1f2d47;
+}
+
+body.dark-theme .modal-close {
+  color: #94a3b8;
+}
+
+body.dark-theme .modal-close:hover {
+  color: #f8fafc;
+}
+
+body.dark-theme .feed-cooldown-box {
+  background: linear-gradient(135deg, #2a1c07 0%, #3d280b 100%);
+  border-color: #78350f;
+  color: #fef3c7;
+}
+
+body.dark-theme .cooldown-desc {
+  color: #fde68a;
+}
+
+body.dark-theme .cooldown-badge {
+  background-color: #451a03;
+  border-color: #92400e;
+  color: #fef08a;
+}
+
+body.dark-theme .fish-card-item {
+  background-color: #1e293b;
+  border-color: #2e3e5c;
+}
+
+body.dark-theme .fish-card-item:hover {
+  border-color: #38bdf8;
+}
+
+body.dark-theme .fish-card-item.active {
+  border-color: #16a34a;
+  background-color: #172a20;
+}
+
+body.dark-theme .fish-spec-chip {
+  background-color: #243450;
+  border-color: #334a70;
+  color: #cbd5e1;
+}
+
+/* ========================================================
+   DIAGRAM PERBANDINGAN PAKAN (CHART)
+   ======================================================== */
+.chart-tab-group {
+  display: flex;
+  gap: 0.35rem;
+  background-color: var(--bg-subtle);
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.chart-tab-btn {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 0.775rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 0.25rem 0.65rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chart-tab-btn.active {
+  background-color: var(--bg-card);
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+body.dark-theme .chart-tab-btn.active {
+  background-color: #1e293b;
+  color: #38bdf8;
+}
+
+.feed-chart-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.chart-stat-item {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.chart-stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.chart-stat-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.chart-stat-value.text-primary {
+  color: #0284c7;
+}
+
+body.dark-theme .chart-stat-value.text-primary {
+  color: #38bdf8;
+}
+
+.chart-stat-value.text-success {
+  color: #16a34a;
+}
+
+body.dark-theme .chart-stat-value.text-success {
+  color: #4ade80;
+}
+
+.chart-stat-sub {
+  font-size: 0.725rem;
+  color: var(--text-light);
+}
+
+/* Diagram Batang Distribusi */
+.feed-bars-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.feed-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.feed-bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.825rem;
+  font-weight: 600;
+}
+
+.feed-bar-time {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-main);
+}
+
+.feed-bar-val {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+}
+
+.feed-bar-track {
+  width: 100%;
+  height: 12px;
+  background-color: var(--bg-subtle);
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  position: relative;
+}
+
+.feed-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Warna Batang */
+.bar-color-morning {
+  background: linear-gradient(90deg, #38bdf8 0%, #0284c7 100%);
+}
+
+.bar-color-afternoon {
+  background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.bar-color-evening {
+  background: linear-gradient(90deg, #34d399 0%, #10b981 100%);
+}
+
+.bar-color-manual {
+  background: linear-gradient(90deg, #a78bfa 0%, #8b5cf6 100%);
+}
+
+.feed-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border);
+}
+
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.legend-color-box {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+/* Diagram Lingkaran / Donut */
+.donut-chart-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 1.25rem;
+  padding: 0.75rem 0;
+  flex-wrap: wrap;
+}
+
+.donut-svg-wrapper {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  flex-shrink: 0;
+}
+
+.donut-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.donut-bg-ring {
+  fill: none;
+  stroke: var(--bg-subtle);
+  stroke-width: 16;
+}
+
+.donut-progress-ring {
+  fill: none;
+  stroke: #0284c7;
+  stroke-width: 16;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease;
+}
+
+body.dark-theme .donut-progress-ring {
+  stroke: #38bdf8;
+}
+
+.donut-center-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.donut-percent {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1;
+}
+
+.donut-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.25rem;
+}
+
+.donut-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  flex: 1;
+  min-width: 180px;
+}
+
+.donut-detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.825rem;
+  line-height: 1.4;
+}
+
+.donut-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 0.3rem;
+  flex-shrink: 0;
+}
+
+.ring-color-done {
+  background-color: #0284c7;
+}
+
+body.dark-theme .ring-color-done {
+  background-color: #38bdf8;
+}
+
+.ring-color-remain {
+  background-color: #cbd5e1;
+}
+
+body.dark-theme .ring-color-remain {
+  background-color: #334155;
+}
+
+.ring-color-storage {
+  background-color: #10b981;
+}
+
+.feed-chart-footer-note {
+  margin-top: 1rem;
+  padding: 0.75rem 0.95rem;
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  color: #0369a1;
+  line-height: 1.45;
+}
+
+body.dark-theme .feed-chart-footer-note {
+  background-color: #17233d;
+  border-color: #2e3e5c;
+  color: #93c5fd;
+}
+
