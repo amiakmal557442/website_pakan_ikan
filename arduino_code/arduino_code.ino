@@ -62,7 +62,7 @@ const char *FIREBASE_ROOT_CA = "";
 constexpr float CALIBRATION_FACTOR = 420.0f; // Kalibrasi untuk load cell (ubah sesuai beban kalibrasi)
 constexpr float STOCK_MIN_GRAMS    = 5.0f;   // Batas minimum stok pakan di tabung
 constexpr uint32_t FEED_INTERVAL_MS = 5UL * 60UL * 60UL * 1000UL; // Interval jeda pakan (5 jam)
-constexpr uint32_t SERVO_OPEN_MS   = 900;    // Durasi corong servo terbuka (ms)
+constexpr uint32_t DEFAULT_SERVO_OPEN_MS = 2500; // Durasi default pakan jika tidak ditentukan (2.5 detik)
 constexpr int SERVO_CLOSED_DEG     = 10;     // Sudut servo tertutup rapat
 constexpr int SERVO_OPEN_DEG       = 80;     // Sudut servo terbuka menuang pakan
 
@@ -83,6 +83,7 @@ float sugenoScore   = 0.0f;
 
 bool feeding        = false;
 uint32_t feedStartedAt = 0;
+uint32_t currentFeedDurationMs = DEFAULT_SERVO_OPEN_MS;
 uint32_t lastFeedAt    = 0;
 uint32_t lastSampleAt  = 0;
 uint32_t lastUploadAt  = 0;
@@ -176,15 +177,15 @@ void sampleSensors() {
 }
 
 // ==============================================================================
-// 6. KONTROL MOTOR SERVO DISPENSER PAKAN (DENGAN JEDA 5 JAM)
+// 6. KONTROL MOTOR SERVO DISPENSER PAKAN (DURASI PRESISI)
 // ==============================================================================
-void triggerFeederAction(uint32_t now, const char* reason, bool bypassCooldown = false) {
+void triggerFeederAction(uint32_t now, uint32_t durationMs, const char* reason, bool bypassCooldown = false) {
   if (stockGrams < STOCK_MIN_GRAMS) {
     Serial.println("[Feeder] Dibatalkan: Stok pakan di tabung habis/kritis!");
     return;
   }
 
-  // Pengaman hardware: pastikan ada jeda minimal 5 jam antar pemberian pakan
+  // Pengaman hardware: pastikan ada jeda minimal 5 jam antar pemberian pakan jika bukan bypass
   if (!bypassCooldown && lastFeedAt > 0 && (now - lastFeedAt < FEED_INTERVAL_MS)) {
     uint32_t remainingMs = FEED_INTERVAL_MS - (now - lastFeedAt);
     uint32_t remMin = remainingMs / 60000UL;
@@ -192,20 +193,30 @@ void triggerFeederAction(uint32_t now, const char* reason, bool bypassCooldown =
     return;
   }
 
-  Serial.printf("[Feeder] Membuka katup servo (%s)...\n", reason);
-  feeder.write(SERVO_OPEN_DEG);
-  feedStartedAt = now;
+  // Validasi batas aman durasi: minimal 500 ms (0.5 detik), maksimal 30000 ms (30 detik)
+  if (durationMs == 0) durationMs = DEFAULT_SERVO_OPEN_MS;
+  if (durationMs < 500) durationMs = 500;
+  if (durationMs > 30000) durationMs = 30000;
+
+  currentFeedDurationMs = durationMs;
+  feedStartedAt = millis(); // Catat waktu tepat saat motor servo mulai membuka
   feeding = true;
+
+  Serial.printf("[Feeder] >>> MEMBUKA KATUP SERVO (%s) selama %lu ms (%.2f detik)... <<<\n", 
+                reason, currentFeedDurationMs, currentFeedDurationMs / 1000.0f);
+  feeder.write(SERVO_OPEN_DEG);
 }
 
 void updateFeeder(uint32_t now) {
-  // Menutup corong jika durasi terbuka sudah terpenuhi
+  // Menutup corong jika durasi terbuka sudah terpenuhi secara presisi
   if (feeding) {
-    if (now - feedStartedAt >= SERVO_OPEN_MS) {
+    if (now - feedStartedAt >= currentFeedDurationMs) {
       feeder.write(SERVO_CLOSED_DEG);
       feeding = false;
       lastFeedAt = now;
-      Serial.println("[Feeder] Corong servo ditutup kembali.");
+      uint32_t actualDuration = now - feedStartedAt;
+      Serial.printf("[Feeder] >>> SELESAI: Corong servo ditutup kembali tepat setelah %lu ms (%.2f detik). <<<\n", 
+                    actualDuration, actualDuration / 1000.0f);
     }
     return;
   }
@@ -217,7 +228,7 @@ void updateFeeder(uint32_t now) {
   if (!firstCycle && (now - lastFeedAt < FEED_INTERVAL_MS)) return;
 
   if (stockGrams > STOCK_MIN_GRAMS && sugenoScore >= 0.60f) {
-    triggerFeederAction(now, "Otomatis Fuzzy Sugeno");
+    triggerFeederAction(now, DEFAULT_SERVO_OPEN_MS, "Otomatis Fuzzy Sugeno", false);
   }
 }
 
@@ -284,8 +295,47 @@ void uploadTelemetryToFirebase() {
 // ==============================================================================
 // 8. FIREBASE: CEK PERINTAH PAKAN DARI WEB DASHBOARD (REMOTE TRIGGER)
 // ==============================================================================
+// Helper parsing nilai numerik dari string JSON sederhana
+long parseJsonInt(const String& json, const String& key) {
+  int keyPos = json.indexOf("\"" + key + "\"");
+  if (keyPos < 0) return -1;
+  int colonPos = json.indexOf(':', keyPos);
+  if (colonPos < 0) return -1;
+  int startPos = colonPos + 1;
+  while (startPos < json.length() && (json[startPos] == ' ' || json[startPos] == '"')) {
+    startPos++;
+  }
+  int endPos = startPos;
+  while (endPos < json.length() && (isDigit(json[endPos]) || json[endPos] == '-' || json[endPos] == '.')) {
+    endPos++;
+  }
+  if (endPos > startPos) {
+    return json.substring(startPos, endPos).toInt();
+  }
+  return -1;
+}
+
+float parseJsonFloat(const String& json, const String& key) {
+  int keyPos = json.indexOf("\"" + key + "\"");
+  if (keyPos < 0) return -1.0f;
+  int colonPos = json.indexOf(':', keyPos);
+  if (colonPos < 0) return -1.0f;
+  int startPos = colonPos + 1;
+  while (startPos < json.length() && (json[startPos] == ' ' || json[startPos] == '"')) {
+    startPos++;
+  }
+  int endPos = startPos;
+  while (endPos < json.length() && (isDigit(json[endPos]) || json[endPos] == '-' || json[endPos] == '.')) {
+    endPos++;
+  }
+  if (endPos > startPos) {
+    return json.substring(startPos, endPos).toFloat();
+  }
+  return -1.0f;
+}
+
 void checkFirebaseFeedTrigger() {
-  if (WiFi.status() != WL_CONNECTED || FIREBASE_URL[0] == '\0') return;
+  if (WiFi.status() != WL_CONNECTED || FIREBASE_URL[0] == '\0' || feeding) return;
 
   WiFiClientSecure client;
   if (FIREBASE_ROOT_CA != nullptr && strlen(FIREBASE_ROOT_CA) > 0) {
@@ -308,15 +358,56 @@ void checkFirebaseFeedTrigger() {
       // Cek apakah ada perintah trigger_feed: true dari website
       if (payload.indexOf("\"trigger_feed\":true") >= 0 || payload.indexOf("\"trigger_feed\": true") >= 0) {
         Serial.println("\n>>> [REMOTE] PERINTAH PAKAN DITERIMA DARI WEB DASHBOARD! <<<");
-        triggerFeederAction(millis(), "Web Dashboard Trigger");
+        Serial.printf("[Control Payload]: %s\n", payload.c_str());
 
-        // Reset trigger di Firebase kembali ke false
+        // Hitung durasi waktu yang diminta (dalam milidetik)
+        uint32_t targetDurationMs = 0;
+
+        // 1. Cek parameter duration_ms
+        long durMs = parseJsonInt(payload, "duration_ms");
+        if (durMs > 0) {
+          targetDurationMs = (uint32_t)durMs;
+        }
+
+        // 2. Jika tidak ada, cek parameter duration_sec
+        if (targetDurationMs == 0) {
+          float durSec = parseJsonFloat(payload, "duration_sec");
+          if (durSec > 0.0f) {
+            targetDurationMs = (uint32_t)(durSec * 1000.0f);
+          }
+        }
+
+        // 3. Jika tidak ada, konversi dari dispense_gram
+        // (10g = 1 detik, 25g = 2.5 detik, 50g = 5 detik, 100g = 10 detik)
+        if (targetDurationMs == 0) {
+          long grams = parseJsonInt(payload, "dispense_gram");
+          if (grams > 0) {
+            if (grams >= 5) {
+              targetDurationMs = (uint32_t)((grams / 10.0f) * 1000.0f);
+            } else {
+              targetDurationMs = (uint32_t)(grams * 1000);
+            }
+          }
+        }
+
+        if (targetDurationMs == 0) {
+          targetDurationMs = DEFAULT_SERVO_OPEN_MS;
+        }
+
+        Serial.printf("[Feeder] Durasi servo ditentukan: %lu ms (%.2f detik).\n", 
+                      targetDurationMs, targetDurationMs / 1000.0f);
+
+        // Reset trigger di Firebase terlebih dahulu agar tidak memicu pakan berulang
         http.end();
         if (http.begin(client, url)) {
           http.addHeader("Content-Type", "application/json");
-          http.PATCH("{\"trigger_feed\":false,\"dispense_gram\":0}");
-          Serial.println("[Firebase] Trigger pakan berhasil di-reset.");
+          http.PATCH("{\"trigger_feed\":false,\"dispense_gram\":0,\"duration_sec\":0,\"duration_ms\":0}");
+          Serial.println("[Firebase] Trigger pakan berhasil di-reset ke false.");
         }
+
+        // BUKA SERVO SETELAH URUSAN JARINGAN SELESAI
+        // Dengan demikian waktu aktuasi servo murni dan akurat tanpa terpotong delay HTTP!
+        triggerFeederAction(millis(), targetDurationMs, "Web Dashboard Trigger", true);
       }
     }
     http.end();
@@ -350,9 +441,18 @@ void handleLocalGetData() {
 }
 
 void handleLocalFeed() {
-  triggerFeederAction(millis(), "Local HTTP /feed");
+  uint32_t durMs = DEFAULT_SERVO_OPEN_MS;
+  if (localServer.hasArg("duration_ms")) {
+    durMs = localServer.arg("duration_ms").toInt();
+  } else if (localServer.hasArg("duration_sec")) {
+    durMs = (uint32_t)(localServer.arg("duration_sec").toFloat() * 1000.0f);
+  } else if (localServer.hasArg("grams") || localServer.hasArg("gram")) {
+    float g = localServer.hasArg("grams") ? localServer.arg("grams").toFloat() : localServer.arg("gram").toFloat();
+    durMs = (g >= 5.0f) ? (uint32_t)((g / 10.0f) * 1000.0f) : (uint32_t)(g * 1000.0f);
+  }
+  triggerFeederAction(millis(), durMs, "Local HTTP /feed", true);
   localServer.sendHeader("Access-Control-Allow-Origin", "*");
-  localServer.send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Pakan dikeluarkan\"}");
+  localServer.send(200, "application/json", "{\"status\":\"ok\",\"message\":\"Pakan dikeluarkan\",\"duration_ms\":" + String(durMs) + "}");
 }
 
 // ==============================================================================
@@ -436,14 +536,23 @@ void setup() {
 void loop() {
   const uint32_t now = millis();
 
-  // Layani request HTTP server lokal jika ada
+  // 1. Layani request HTTP server lokal jika ada
   localServer.handleClient();
 
-  // 1. Baca sensor setiap 2 detik
+  // 2. PRIORITAS UTAMA: Perbarui kondisi motor servo secara real-time per siklus loop
+  updateFeeder(now);
+
+  // Jika motor servo sedang aktif membuka katup pakan:
+  // JANGAN jalankan network request HTTPS Firebase yang memblokir CPU agar durasi pembukaan servo 100% presisi!
+  if (feeding) {
+    delay(5);
+    return;
+  }
+
+  // 3. Baca sensor setiap 2 detik (saat servo tertutup)
   if (now - lastSampleAt >= 2000UL) {
     lastSampleAt = now;
     sampleSensors();
-    updateFeeder(now);
 
     if (isfinite(waterC)) {
       Serial.printf("[Sensor] Suhu=%.2f C | Keruh=%.0f ADC (~%d%%) | Pakan=%.1f g | Sugeno=%.2f | Servo=%s\n",
@@ -456,17 +565,17 @@ void loop() {
     }
   }
 
-  // 2. Cek perintah trigger pakan dari Web Dashboard setiap 2 detik
-  if (now - lastCheckTriggerAt >= 2000UL) {
+  // 4. Cek perintah trigger pakan dari Web Dashboard setiap 1 detik agar responsif
+  if (now - lastCheckTriggerAt >= 1000UL) {
     lastCheckTriggerAt = now;
     checkFirebaseFeedTrigger();
   }
 
-  // 3. Upload data sensor ke Firebase setiap 4 detik (cepat sinkron ke website)
+  // 5. Upload data sensor ke Firebase setiap 4 detik (cepat sinkron ke website)
   if (now - lastUploadAt >= 4000UL) {
     lastUploadAt = now;
     uploadTelemetryToFirebase();
   }
 
-  delay(10);
+  delay(5);
 }

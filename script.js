@@ -659,10 +659,13 @@ async function dispenseFeed(grams, source = 'Manual') {
     return false;
   }
 
+  const durationSec = grams >= 5 ? grams / 10 : grams;
+  const durationMs = Math.round(durationSec * 1000);
+
   // Tampilkan loading / status servo
   feedActionProgress.style.display = 'flex';
   btnDispenseFeed.disabled = true;
-  feedActionStatusText.textContent = `Mengeluarkan pakan (${formatFeedDuration(grams)}, ${source})...`;
+  feedActionStatusText.textContent = `Membuka katup pakan (${formatFeedDuration(grams)}, ${source})...`;
 
   let success = false;
 
@@ -685,7 +688,12 @@ async function dispenseFeed(grams, source = 'Manual') {
           const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ grams: grams, source: source })
+            body: JSON.stringify({ 
+              grams: grams, 
+              source: source,
+              duration_sec: durationSec,
+              duration_ms: durationMs
+            })
           });
           if (response.ok) {
             resData = await response.json();
@@ -706,6 +714,8 @@ async function dispenseFeed(grams, source = 'Manual') {
           body: JSON.stringify({
             trigger_feed: true,
             dispense_gram: grams,
+            duration_sec: durationSec,
+            duration_ms: durationMs,
             source: source,
             requested_at: new Date().toISOString(),
             last_feed_time: new Date().toLocaleTimeString('id-ID')
@@ -728,7 +738,8 @@ async function dispenseFeed(grams, source = 'Manual') {
   } else if (appState.mode === 'hardware') {
     // Mode Hardware: Kirim request HTTP ke Arduino / ESP32
     try {
-      const url = `${appState.feedApiUrl}${grams}`;
+      const sep = appState.feedApiUrl.includes('?') ? '&' : '?';
+      const url = `${appState.feedApiUrl}${grams}${sep}duration_ms=${durationMs}&duration_sec=${durationSec}`;
       const response = await fetch(url, { method: 'GET', mode: 'cors' });
       if (response.ok) {
         success = true;
@@ -742,8 +753,8 @@ async function dispenseFeed(grams, source = 'Manual') {
       success = true; // izinkan pencatatan lokal agar alur tidak terputus
     }
   } else {
-    // Mode Simulasi: Beri jeda 1.2 detik menirukan putaran servo
-    await new Promise(r => setTimeout(r, 1200));
+    // Mode Simulasi: Beri jeda sesuai durasi putaran servo
+    await new Promise(r => setTimeout(r, Math.max(1000, durationMs)));
     success = true;
   }
 
@@ -761,11 +772,14 @@ async function dispenseFeed(grams, source = 'Manual') {
     saveState();
     renderFeedMetrics();
 
-    feedActionStatusText.textContent = `Berhasil! Pakan telah dituangkan (${formatFeedDuration(grams)}).`;
+    feedActionStatusText.textContent = `Servo membuka katup (${formatFeedDuration(grams)})...`;
     setTimeout(() => {
-      feedActionProgress.style.display = 'none';
-      updateFeedButtonCooldownUI();
-    }, 2000);
+      feedActionStatusText.textContent = `Berhasil! Pakan selesai dituangkan (${formatFeedDuration(grams)}).`;
+      setTimeout(() => {
+        feedActionProgress.style.display = 'none';
+        updateFeedButtonCooldownUI();
+      }, 1500);
+    }, durationMs);
 
     return true;
   } else {

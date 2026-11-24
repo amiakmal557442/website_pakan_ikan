@@ -89,6 +89,8 @@ class PondController extends Controller
         $grams  = (int)$request->input('grams', 25);
         $source = $request->input('source', 'Manual');
         $bypass = (bool)$request->input('bypass_cooldown', false);
+        $durationSec = (float)$request->input('duration_sec', ($grams >= 5 ? $grams / 10.0 : $grams));
+        $durationMs  = (int)$request->input('duration_ms', (int)round($durationSec * 1000));
 
         // Validasi jeda pakan 5 jam untuk manual
         $control = $this->firebase->get($this->firebase->getNode('control')) ?? [];
@@ -131,6 +133,8 @@ class PondController extends Controller
         $this->firebase->set($this->firebase->getNode('control'), [
             'trigger_feed'  => true,
             'dispense_gram' => $grams,
+            'duration_sec'  => $durationSec,
+            'duration_ms'   => $durationMs,
             'source'        => $source,
             'requested_at'  => $currentDate,
             'last_feed_time'=> $currentTime,
@@ -158,6 +162,8 @@ class PondController extends Controller
             'success'         => true,
             'message'         => "Perintah pakan {$grams} gram berhasil dikirim ke Firebase!",
             'dispense_gram'   => $grams,
+            'duration_sec'    => $durationSec,
+            'duration_ms'     => $durationMs,
             'sisa_pakan_baru' => $newSisaPakan,
             'feed_today_baru' => $newFeedToday
         ]);

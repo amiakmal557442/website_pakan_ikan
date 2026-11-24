@@ -98,6 +98,8 @@ try {
             $grams  = isset($inputData['grams']) ? intval($inputData['grams']) : 25;
             $source = isset($inputData['source']) ? $inputData['source'] : 'Manual';
             $bypass = !empty($inputData['bypass_cooldown']);
+            $durationSec = isset($inputData['duration_sec']) ? floatval($inputData['duration_sec']) : ($grams >= 5 ? ($grams / 10.0) : $grams);
+            $durationMs  = isset($inputData['duration_ms']) ? intval($inputData['duration_ms']) : round($durationSec * 1000);
 
             if ($grams <= 0) {
                 http_response_code(400);
@@ -154,6 +156,8 @@ try {
             $controlData = [
                 'trigger_feed'  => true,
                 'dispense_gram' => $grams,
+                'duration_sec'  => $durationSec,
+                'duration_ms'   => $durationMs,
                 'source'        => $source,
                 'requested_at'  => $currentDate,
                 'last_feed_time'=> $currentTime,
@@ -182,6 +186,8 @@ try {
                 'success'         => true,
                 'message'         => "Perintah pengeluaran {$grams} gram pakan berhasil dikirim ke Firebase!",
                 'dispense_gram'   => $grams,
+                'duration_sec'    => $durationSec,
+                'duration_ms'     => $durationMs,
                 'sisa_pakan_baru' => $newSisaPakan,
                 'feed_today_baru' => $newFeedToday
             ], JSON_PRETTY_PRINT);
