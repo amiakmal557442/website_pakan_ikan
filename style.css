@@ -300,14 +300,35 @@ body {
 }
 
 .brand-icon {
-  font-size: 1.75rem;
-  background: var(--primary-light);
   width: 44px;
   height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
+  background: #fbf9f4;
+  border: 1px solid rgba(2, 132, 199, 0.22);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 3px;
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.brand-icon:hover {
+  transform: scale(1.08);
+  border-color: var(--primary);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
+}
+
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .brand-title {
@@ -1936,6 +1957,17 @@ body.dark-theme .app-header {
 
 body.dark-theme .brand-title {
   color: #38bdf8;
+}
+
+body.dark-theme .brand-icon {
+  background: #fbf9f4;
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 10px rgba(56, 189, 248, 0.15);
+}
+
+body.dark-theme .brand-icon:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 18px rgba(56, 189, 248, 0.35);
 }
 
 body.dark-theme .overview-banner {
