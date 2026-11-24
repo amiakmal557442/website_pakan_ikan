@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ==============================================================================
  * PROYEK: SISTEM MONITORING AIR & PAKAN IKAN OTOMATIS (AMBAJAYA FISH)
  * Microcontroller: ESP32 + Firebase Realtime Database + Web Dashboard

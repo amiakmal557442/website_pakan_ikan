@@ -14,7 +14,7 @@ Dokumen ini menjelaskan cara menghubungkan sistem **Ambajaya Fish** ke **Firebas
    - URL berada di bagian atas tabel database, contohnya:
      `https://ambajaya-kolam-default-rtdb.asia-southeast1.firebasedatabase.app/`
 4. **Dapatkan Database Secret Key (Auth Token):**
-   - Klik ikon **⚙️ (Project settings)** di sebelah kiri atas samping tulisan *Project Overview*.
+   - Klik ikon **⚙️ (Project settings)** di sebelah kiri atas samping tulisan _Project Overview_.
    - Pilih tab **Service accounts**.
    - Klik submenu **Database secrets**.
    - Klik tombol **Show** lalu salin token rahasia tersebut.
@@ -24,6 +24,7 @@ Dokumen ini menjelaskan cara menghubungkan sistem **Ambajaya Fish** ke **Firebas
 ## 📌 2. Tempat Memasukkan API Key & Database URL
 
 ### A. Pilihan 1: Menggunakan PHP Native (Sangat Cepat & Tanpa Composer)
+
 Buka file [`backend-php/firebase_config.php`](file:///c:/akmal%20project/website%20Arduino/backend-php/firebase_config.php), lalu masukkan kredensial Anda pada bagian berikut:
 
 ```php
@@ -35,15 +36,19 @@ define('FIREBASE_PROJECT_ID',   'NAMA_PROJECT_FIREBASE_ANDA');
 
 **Cara Menjalankan Website + PHP Backend:**
 Cukup jalankan server bawaan PHP di folder utama proyek:
+
 ```bash
 php -S localhost:8080
 ```
+
 Buka browser: `http://localhost:8080/index.html`
 
 ---
 
 ### B. Pilihan 2: Menggunakan Framework Laravel
+
 Jika Anda menggunakan proyek Laravel, salin file dari folder `laravel-backend/`:
+
 1. Salin baris berikut ke file `.env` di proyek Laravel Anda:
    ```env
    # >>> TEMPAT MEMASUKKAN FIREBASE API KEY & CONFIG DI LARAVEL <<<
@@ -65,7 +70,9 @@ Jika Anda menggunakan proyek Laravel, salin file dari folder `laravel-backend/`:
 ---
 
 ### C. Mikrokontroler Arduino / ESP32 (Satu File Lengkap: `arduino_code.ino`)
+
 Buka file [`arduino_code.ino`](file:///c:/akmal%20project/website%20Arduino/arduino_code.ino) di Arduino IDE:
+
 ```cpp
 // >>> KREDENSIAL WIFI & FIREBASE ANDA TELAH TERINTEGRASI DI SINI <<<
 const char *WIFI_SSID         = "CirkitWifi"; // Ganti dengan WiFi Anda jika berpindah jaringan
@@ -73,6 +80,7 @@ const char *WIFI_PASSWORD     = "";
 const char *FIREBASE_URL      = "https://connect-esp32-to-database-default-rtdb.asia-southeast1.firebasedatabase.app";
 const char *FIREBASE_AUTH_TOKEN = "AIzaSyBJ56CgfhMKdp9HY9V6o1YbYz7Qb8Q374E";
 ```
+
 Upload ke ESP32 Anda. File ini telah menyatukan seluruh sensor kolam (DS18B20, Kekeruhan, HX711), Fuzzy Sugeno, jeda 5 jam, serta koneksi dua arah ke Firebase.
 
 ---
@@ -129,4 +137,3 @@ Data di Firebase Realtime Database disimpan dalam format JSON:
    - Jika pakai Laravel: `http://localhost:8000/api/pond`
 5. Klik tombol **🔥 Uji Sambungan ke Firebase (via Backend)** untuk memastikan status tersambung.
 6. Klik **Simpan Perubahan**. Dashboard Anda kini live terhubung ke cloud Firebase!
-
