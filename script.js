@@ -806,6 +806,8 @@ function formatFeedDuration(grams) {
   return `${g.toString().replace('.', ',')} detik`;
 }
 
+let editingScheduleId = null;
+
 function renderSchedules() {
   scheduleListContainer.innerHTML = '';
 
@@ -821,47 +823,185 @@ function renderSchedules() {
     // Pastikan takaran pakan selalu bilangan bulat yang aman
     item.grams = Math.max(5, Math.round(parseFloat(item.grams) || 25));
 
+    const isEditing = (editingScheduleId === item.id);
     const itemEl = document.createElement('div');
-    itemEl.className = `schedule-item ${item.enabled ? '' : 'disabled'}`;
-    itemEl.innerHTML = `
-      <div class="schedule-left">
-        <span class="schedule-time">${item.time}</span>
-        <span class="schedule-grams">Durasi: <strong>${formatFeedDuration(item.grams)}</strong></span>
-      </div>
-      <div class="schedule-actions">
-        <label class="switch" title="${item.enabled ? 'Nonaktifkan' : 'Aktifkan'}">
-          <input type="checkbox" ${item.enabled ? 'checked' : ''} data-id="${item.id}" class="schedule-toggle">
-          <span class="slider"></span>
-        </label>
-        <button class="btn-icon-danger btn-delete-schedule" data-id="${item.id}" title="Hapus Jadwal">✕</button>
-      </div>
-    `;
+
+    if (isEditing) {
+      itemEl.className = 'schedule-item editing';
+      itemEl.innerHTML = `
+        <div class="schedule-edit-form">
+          <div class="schedule-edit-title">
+            <span>✏️ Edit Jam & Durasi Pakan</span>
+          </div>
+          <div class="schedule-edit-inputs">
+            <div class="schedule-edit-field">
+              <label for="editScheduleTime_${item.id}">Jam Pakan:</label>
+              <input type="time" id="editScheduleTime_${item.id}" class="edit-schedule-time" value="${item.time}">
+            </div>
+            <div class="schedule-edit-field">
+              <label for="editScheduleGrams_${item.id}">Durasi Katup Servo:</label>
+              <select id="editScheduleGrams_${item.id}" class="edit-schedule-grams schedule-grams-select">
+                <option value="5" ${item.grams === 5 ? 'selected' : ''}>0,5 detik (Porsi Mini)</option>
+                <option value="9" ${item.grams === 9 ? 'selected' : ''}>0,9 detik (Porsi Halus)</option>
+                <option value="10" ${item.grams === 10 ? 'selected' : ''}>1 detik (Porsi Kecil)</option>
+                <option value="25" ${item.grams === 25 ? 'selected' : ''}>2,5 detik (Porsi Sedang)</option>
+                <option value="50" ${item.grams === 50 ? 'selected' : ''}>5 detik (Porsi Besar)</option>
+                <option value="100" ${item.grams === 100 ? 'selected' : ''}>10 detik (Porsi Ekstra)</option>
+                ${![5, 9, 10, 25, 50, 100].includes(item.grams) ? `<option value="${item.grams}" selected>${formatFeedDuration(item.grams)} (Kustom)</option>` : ''}
+              </select>
+            </div>
+          </div>
+          <div class="schedule-edit-actions">
+            <button class="btn btn-primary btn-sm btn-save-inline-schedule" data-id="${item.id}">✓ Simpan Perubahan</button>
+            <button class="btn btn-outline btn-sm btn-cancel-inline-schedule" data-id="${item.id}">✕ Batal</button>
+          </div>
+        </div>
+      `;
+    } else {
+      itemEl.className = `schedule-item ${item.enabled ? '' : 'disabled'}`;
+      itemEl.innerHTML = `
+        <div class="schedule-left">
+          <span class="schedule-time">${item.time}</span>
+          <span class="schedule-grams" data-id="${item.id}" title="Klik untuk mengedit durasi pakan">
+            Durasi: <strong>${formatFeedDuration(item.grams)}</strong>
+          </span>
+        </div>
+        <div class="schedule-actions">
+          <button class="btn-icon-edit btn-edit-schedule" data-id="${item.id}" title="Edit Jam & Durasi Pakan" aria-label="Edit">
+            ✏️ Edit
+          </button>
+          <label class="switch" title="${item.enabled ? 'Nonaktifkan' : 'Aktifkan'}">
+            <input type="checkbox" ${item.enabled ? 'checked' : ''} data-id="${item.id}" class="schedule-toggle">
+            <span class="slider"></span>
+          </label>
+          <button class="btn-icon-danger btn-delete-schedule" data-id="${item.id}" title="Hapus Jadwal" aria-label="Hapus">✕</button>
+        </div>
+      `;
+    }
+
     scheduleListContainer.appendChild(itemEl);
+  });
+
+  // Event listener tombol edit inline
+  document.querySelectorAll('.btn-edit-schedule').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = parseInt(e.currentTarget.dataset.id, 10);
+      editingScheduleId = id;
+      renderSchedules();
+    });
+  });
+
+  document.querySelectorAll('.schedule-grams').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const id = parseInt(e.currentTarget.dataset.id, 10);
+      if (id) {
+        editingScheduleId = id;
+        renderSchedules();
+      }
+    });
+  });
+
+  document.querySelectorAll('.btn-save-inline-schedule').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = parseInt(e.currentTarget.dataset.id, 10);
+      const targetItem = appState.schedules.find(s => s.id === id);
+      if (!targetItem) return;
+
+      const timeInput = document.getElementById(`editScheduleTime_${id}`);
+      const gramsSelect = document.getElementById(`editScheduleGrams_${id}`);
+      if (!timeInput || !gramsSelect) return;
+
+      const newTime = timeInput.value;
+      const newGrams = parseInt(gramsSelect.value, 10);
+
+      if (!newTime || isNaN(newGrams) || newGrams <= 0) {
+        alert('Harap pilih jam dan durasi pakan yang valid!');
+        return;
+      }
+
+      // Cek bentrok jam dengan jadwal lain
+      const clash = appState.schedules.find(s => s.id !== id && s.time === newTime);
+      if (clash) {
+        if (!confirm(`Sudah ada jadwal lain pada jam ${newTime} (${formatFeedDuration(clash.grams)}).\nApakah Anda ingin tetap menyimpan perubahan jam ini?`)) {
+          return;
+        }
+      }
+
+      targetItem.time = newTime;
+      targetItem.grams = newGrams;
+      editingScheduleId = null;
+
+      saveState();
+      renderSchedules();
+      updateNextScheduleBadge();
+      renderFeedChart();
+      syncSchedulesToCloud();
+    });
+  });
+
+  document.querySelectorAll('.btn-cancel-inline-schedule').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editingScheduleId = null;
+      renderSchedules();
+    });
   });
 
   // Event listener tombol toggle & hapus
   document.querySelectorAll('.schedule-toggle').forEach(input => {
     input.addEventListener('change', (e) => {
-      const id = parseInt(e.target.dataset.id);
+      const id = parseInt(e.target.dataset.id, 10);
       const schedule = appState.schedules.find(s => s.id === id);
       if (schedule) {
         schedule.enabled = e.target.checked;
         saveState();
         renderSchedules();
         updateNextScheduleBadge();
+        syncSchedulesToCloud();
       }
     });
   });
 
   document.querySelectorAll('.btn-delete-schedule').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const id = parseInt(e.currentTarget.dataset.id);
+      const id = parseInt(e.currentTarget.dataset.id, 10);
       appState.schedules = appState.schedules.filter(s => s.id !== id);
+      if (editingScheduleId === id) editingScheduleId = null;
       saveState();
       renderSchedules();
       updateNextScheduleBadge();
+      renderFeedChart();
+      syncSchedulesToCloud();
     });
   });
+}
+
+async function syncSchedulesToCloud() {
+  if (appState.mode !== 'firebase') return;
+  try {
+    if (window.location.protocol.startsWith('http')) {
+      let url = appState.firebaseApiUrl || 'backend-php/api.php';
+      if (url.includes('.php')) {
+        url += (url.includes('?') ? '&' : '?') + 'action=schedules';
+      } else {
+        url = url.replace(/\/$/, '') + '/schedules';
+      }
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schedules: appState.schedules })
+      }).catch(() => {});
+    }
+    if (FIREBASE_CONFIG && FIREBASE_CONFIG.databaseURL) {
+      const directUrl = `${FIREBASE_CONFIG.databaseURL}/pond/schedules.json?auth=${FIREBASE_CONFIG.apiKey}`;
+      await fetch(directUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(appState.schedules)
+      }).catch(() => {});
+    }
+  } catch (err) {
+    console.warn('Gagal sinkron jadwal ke cloud:', err);
+  }
 }
 
 function updateNextScheduleBadge() {
@@ -1323,6 +1463,8 @@ function initEventListeners() {
         saveState();
         renderSchedules();
         updateNextScheduleBadge();
+        renderFeedChart();
+        syncSchedulesToCloud();
         addScheduleBox.style.display = 'none';
         btnToggleAddSchedule.textContent = '+ Tambah Jam';
       }
@@ -1340,6 +1482,8 @@ function initEventListeners() {
     saveState();
     renderSchedules();
     updateNextScheduleBadge();
+    renderFeedChart();
+    syncSchedulesToCloud();
 
     addScheduleBox.style.display = 'none';
     btnToggleAddSchedule.textContent = '+ Tambah Jam';
