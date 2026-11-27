@@ -825,6 +825,20 @@ function renderSchedules() {
 
     const isEditing = (editingScheduleId === item.id);
     const itemEl = document.createElement('div');
+    itemEl.className = `schedule-item ${item.enabled ? '' : 'disabled'}`;
+    itemEl.innerHTML = `
+      <div class="schedule-left">
+        <span class="schedule-time">${item.time}</span>
+        <span class="schedule-grams">Durasi: <strong>${formatFeedDuration(item.grams)}</strong></span>
+      </div>
+      <div class="schedule-actions">
+        <label class="switch" title="${item.enabled ? 'Nonaktifkan' : 'Aktifkan'}">
+          <input type="checkbox" ${item.enabled ? 'checked' : ''} data-id="${item.id}" class="schedule-toggle">
+          <span class="slider"></span>
+        </label>
+        <button class="btn-icon-danger btn-delete-schedule" data-id="${item.id}" title="Hapus Jadwal">✕</button>
+      </div>
+    `;
 
     if (isEditing) {
       itemEl.className = 'schedule-item editing';
@@ -949,6 +963,7 @@ function renderSchedules() {
   // Event listener tombol toggle & hapus
   document.querySelectorAll('.schedule-toggle').forEach(input => {
     input.addEventListener('change', (e) => {
+      const id = parseInt(e.target.dataset.id);
       const id = parseInt(e.target.dataset.id, 10);
       const schedule = appState.schedules.find(s => s.id === id);
       if (schedule) {
@@ -963,6 +978,7 @@ function renderSchedules() {
 
   document.querySelectorAll('.btn-delete-schedule').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      const id = parseInt(e.currentTarget.dataset.id);
       const id = parseInt(e.currentTarget.dataset.id, 10);
       appState.schedules = appState.schedules.filter(s => s.id !== id);
       if (editingScheduleId === id) editingScheduleId = null;

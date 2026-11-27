@@ -2278,12 +2278,14 @@ body.dark-theme .key-point-item .point-text strong {
 
 /* Reading Rows in Dark Theme */
 body.dark-theme .reading-text-row {
+  border-bottom-color: #1f2d47;
   background-color: #1e293b;
   border-color: #2e3e5c;
   color: #f8fafc;
 }
 
 body.dark-theme .reading-text-row:hover {
+  background-color: rgba(30, 41, 59, 0.6);
   background-color: #243450;
   border-color: #38bdf8;
 }
